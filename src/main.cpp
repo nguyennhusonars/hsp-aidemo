@@ -113,6 +113,9 @@ class gstObject {
             } else if (pixel_format == "I420") {
                 cv::Mat yuv(height + height / 2, width, CV_8UC1, const_cast<guint8*>(raw_data));
                 cv::cvtColor(yuv, frame, cv::COLOR_YUV2BGR_I420);
+            } else if (pixel_format == "NV12") {
+                cv::Mat yuv(height + height / 2, width, CV_8UC1, const_cast<guint8*>(raw_data));
+                cv::cvtColor(yuv, frame, cv::COLOR_YUV2BGR_NV12);
             } else {
                 g_printerr("Unsupported pixel format: %s\n", pixel_format.c_str());
                 gst_buffer_unmap(buffer, &map_info);
@@ -377,7 +380,7 @@ int main(int argc, char* argv[]) {
 
             singleThread.aiObj = new aiObject();
             singleThread.aiObj->loadDB(DB_PATH);
-            singleThread.gstObj = new gstObject("/home/vboxuser/Documents/aipackage/models/frtest.mp4", INPUT_TYPE::VIDEO);
+            singleThread.gstObj = new gstObject("/home/vboxuser/hsp-aidemo/models/frtest-1.mp4", INPUT_TYPE::VIDEO);
             // streamThreads.emplace_back(std::thread(&threadHandler::startThread, singleThread));
             // streamThreads.emplace_back(std::thread(&threadHandler::joinThread, singleThread));
             singleThread.startThread();
@@ -388,6 +391,6 @@ int main(int argc, char* argv[]) {
             thread.join();
         }
     }
-    // sleep(2000);
+    sleep(2000);
     return 0;
 }

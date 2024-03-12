@@ -5,10 +5,6 @@ PROJECT(aidemo LANGUAGES CXX)
 include_directories(${SYSROOT_INCDIR})
 link_directories(${SYSROOT_LIBDIR})
 
-# find_package(PkgConfig)
-# pkg_check_modules(GST
-#   REQUIRED gstreamer-1.0)
-
 if(BUILD_X86)
     set(CMAKE_C_COMPILER /usr/bin/clang)
     set(CMAKE_CXX_COMPILER /usr/bin/clang++)
@@ -29,15 +25,12 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17 -Wall -Ofast -Wfatal-errors -
 INCLUDE_DIRECTORIES(
     ${OpenCV_DIR}/include/opencv4
     ${CMAKE_SOURCE_DIR}/include/nlohmann
+    ${CMAKE_SOURCE_DIR}/include/glib-2.0
+    ${CMAKE_SOURCE_DIR}/include/gstreamer-1.0
     ${CMAKE_SOURCE_DIR}/include/SNPE2.19
     ${CMAKE_SOURCE_DIR}/src
     ${CMAKE_SOURCE_DIR}/src/core
 )
-
-# # Find the GStreamer package
-# find_package(PkgConfig REQUIRED)
-# #pkg_check_modules(GSTREAMER REQUIRED gstreamer-1.0 gstreamer-app-1.0)
-# include_directories(${GSTREAMER_INCLUDE_DIRS})
 
 file (GLOB SRC_FILES 
     ${CMAKE_SOURCE_DIR}/src/core/*.cpp
@@ -57,11 +50,6 @@ elseif(BUILD_AARCH64)
 endif()
 
 ADD_EXECUTABLE(${PROJECT_NAME} ${SRC_FILES})
-
-target_include_directories(${PROJECT_NAME} PRIVATE
-  /usr/include/gstreamer-1.0
-  /usr/include/glib-2.0
-)
 
 TARGET_LINK_LIBRARIES(${PROJECT_NAME}
     -lm -ldl -lpthread

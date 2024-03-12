@@ -2,6 +2,13 @@ cmake_minimum_required(VERSION 3.10)
 
 PROJECT(aidemo LANGUAGES CXX)
 
+include_directories(${SYSROOT_INCDIR})
+link_directories(${SYSROOT_LIBDIR})
+
+# find_package(PkgConfig)
+# pkg_check_modules(GST
+#   REQUIRED gstreamer-1.0)
+
 if(BUILD_X86)
     set(CMAKE_C_COMPILER /usr/bin/clang)
     set(CMAKE_CXX_COMPILER /usr/bin/clang++)
@@ -24,14 +31,16 @@ INCLUDE_DIRECTORIES(
     ${CMAKE_SOURCE_DIR}/include/nlohmann
     ${CMAKE_SOURCE_DIR}/include/SNPE2.19
     ${CMAKE_SOURCE_DIR}/src
+    ${CMAKE_SOURCE_DIR}/src/core
 )
 
-# Find the GStreamer package
-find_package(PkgConfig REQUIRED)
-pkg_check_modules(GSTREAMER REQUIRED gstreamer-1.0 gstreamer-app-1.0)
-include_directories(${GSTREAMER_INCLUDE_DIRS})
+# # Find the GStreamer package
+# find_package(PkgConfig REQUIRED)
+# #pkg_check_modules(GSTREAMER REQUIRED gstreamer-1.0 gstreamer-app-1.0)
+# include_directories(${GSTREAMER_INCLUDE_DIRS})
 
 file (GLOB SRC_FILES 
+    ${CMAKE_SOURCE_DIR}/src/core/*.cpp
     ${CMAKE_SOURCE_DIR}/src/*.cpp
 )
 
@@ -49,6 +58,11 @@ endif()
 
 ADD_EXECUTABLE(${PROJECT_NAME} ${SRC_FILES})
 
+target_include_directories(${PROJECT_NAME} PRIVATE
+  /usr/include/gstreamer-1.0
+  /usr/include/glib-2.0
+)
+
 TARGET_LINK_LIBRARIES(${PROJECT_NAME}
     -lm -ldl -lpthread
     -lopencv_core
@@ -56,8 +70,12 @@ TARGET_LINK_LIBRARIES(${PROJECT_NAME}
     -lopencv_imgcodecs
     -lopencv_videoio
     -lopencv_highgui
-    -lSNPE -lX11
-    ${GSTREAMER_LIBRARIES}
+    -lSNPE
+    /usr/lib/aarch64-linux-gnu/libgstreamer-1.0.so.0.1603.0
+    /usr/lib/aarch64-linux-gnu/libgstapp-1.0.so.0.1603.0
+    /usr/lib/aarch64-linux-gnu/libglib-2.0.so.0.6400.6
+    /usr/lib/aarch64-linux-gnu/libgobject-2.0.so.0.6400.6
 ) 
 
 add_definitions(-O2 -pthread -frtti)
+

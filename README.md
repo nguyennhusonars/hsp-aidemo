@@ -45,9 +45,13 @@ Push the model to ${SNPE_ROOT}/examples/Models/scrfd/onnx/
 Convert from onnx to dlc: snpe-onnx-to-dlc --input_network onnx/buffalo_s/det_500m.onnx --input_dim input.1 "1,3,640,640" --output_path $SNPE_ROOT/examples/Models/scrfd/dlc/det_500m.dlc
 
 Prepare raw image list:
+
 mkdir -p data/cropped
+
 python scripts/create_scrfd_raws.py -i data/ -d data/cropped/
+
 python scripts/create_file_list.py -i data/cropped/ -o data/cropped/raw_list.txt -e *.raw
+
 python scripts/create_file_list.py -i data/cropped/ -o data/target_raw_list.txt -e *.raw -r
 
 Quantize the dlc model: snpe-dlc-quantize --input_dlc dlc/det_500m.dlc --input_list data/cropped/raw_list.txt --output_dlc dlc/det_500m_quantized.dlc

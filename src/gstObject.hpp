@@ -1,14 +1,23 @@
-#include <gst/gst.h>
-#include <gst/app/gstappsink.h>
-#include <gst/video/video.h>
-
+#include "FaceAlign.hpp"
 #include <opencv2/core/core.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
 #include <opencv2/videoio/videoio.hpp>
 #include <opencv2/highgui/highgui.hpp>
 
+#include "FaceDet.hpp"
+#include "FaceRec.hpp"
+
+#include <gst/gst.h>
+#include <gst/app/gstappsink.h>
+#include <gst/video/video.h>
+
 #include <thread>
 #include <condition_variable>
+
+#define FACEDET_MODEL_PATH "../models/det_500m_quantized.dlc"
+#define FACEREC_MODEL_PATH "../models/w600k_r50_quantized.dlc"
+#define DB_IMAGE_PATH "../models/images/"
+#define DB_PATH "../models/db.txt"
 
 typedef enum INPUT_TYPE {
     NONE = 0,
@@ -39,7 +48,7 @@ class gstObject {
     cv::Mat getLastFrame();
     int threadID;
 
-   private:
+//    private:
     GstElement* pipeline_;
     GstAppSink* appsink_;
     GstBus* bus_;
@@ -51,4 +60,18 @@ class gstObject {
     GMainLoop* mainLoop_;
     GstFlowReturn onNewSample(GstElement* appsink);
     void decode();
+    GstBuffer* buffer;
+    GstMapInfo map_info;
+
+    int loadDB(std::string jsonFilePath);
+    int addDB(std::string imgFilePath);
+    std::unique_ptr<SCRFD> det = nullptr;
+    std::unique_ptr<SnpeInsightface> rec = nullptr;
+    std::vector<FaceObject> faceObjs;
+    cv::Mat img;
+
+   private:
+    std::vector<std::string> ids;
+    cv::Mat feat;
+    std::thread processThread_;
 };

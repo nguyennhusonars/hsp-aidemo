@@ -52,7 +52,7 @@ endif()
 ADD_EXECUTABLE(${PROJECT_NAME} ${SRC_FILES})
 
 TARGET_LINK_LIBRARIES(${PROJECT_NAME}
-    -lm -ldl -lpthread
+    -lm -ldl -lpthread -lcairo
     -lopencv_core
     -lopencv_imgproc
     -lopencv_imgcodecs
@@ -66,4 +66,3 @@ TARGET_LINK_LIBRARIES(${PROJECT_NAME}
 ) 
 
 add_definitions(-O2 -pthread -frtti)
-

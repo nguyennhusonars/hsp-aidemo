@@ -48,7 +48,6 @@ class gstObject {
     cv::Mat getLastFrame();
     int threadID;
 
-//    private:
     GstElement* pipeline_;
     GstAppSink* appsink_;
     GstBus* bus_;
@@ -65,13 +64,12 @@ class gstObject {
 
     int loadDB(std::string jsonFilePath);
     int addDB(std::string imgFilePath);
-    std::unique_ptr<SCRFD> det = nullptr;
-    std::unique_ptr<SnpeInsightface> rec = nullptr;
+    std::unique_ptr<SCRFD> det = std::make_unique<SCRFD>();
+    std::unique_ptr<SnpeInsightface> rec = std::make_unique<SnpeInsightface>();;
     std::vector<FaceObject> faceObjs;
     cv::Mat img;
 
    private:
     std::vector<std::string> ids;
     cv::Mat feat;
-    std::thread processThread_;
 };

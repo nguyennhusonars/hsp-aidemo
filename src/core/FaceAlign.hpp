@@ -3,12 +3,11 @@
 #define FACE_ALIGN
 #include <opencv2/opencv.hpp>
 
-static float norm_face[5][2] = {
-    {30.2946f + 8.0, 51.6963f},
-    {65.5318f + 8.0, 51.5014f},
-    {48.0252f + 8.0, 71.7366f},
-    {33.5493f + 8.0, 92.3655f},
-    {62.7299f + 8.0, 92.2041f}};
+static float norm_face[5][2] = {{30.2946f + 8.0, 51.6963f},
+                                {65.5318f + 8.0, 51.5014f},
+                                {48.0252f + 8.0, 71.7366f},
+                                {33.5493f + 8.0, 92.3655f},
+                                {62.7299f + 8.0, 92.2041f}};
 
 static cv::Mat meanAxis0(const cv::Mat &src) {
     int num = src.rows;

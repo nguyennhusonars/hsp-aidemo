@@ -38,6 +38,23 @@ int gstObject::loadDB(std::string jsonFilePath) {
     return 0;
 }
 
+cv::Mat resizeKeepAspectRatio(const cv::Mat &input, const cv::Size &dstSize, const cv::Scalar &bgcolor) {
+    cv::Mat output;
+    double h1 = dstSize.width * (input.rows / (double)input.cols);
+    double w2 = dstSize.height * (input.cols / (double)input.rows);
+    if (h1 <= dstSize.height) {
+        cv::resize(input, output, cv::Size(dstSize.width, h1));
+    } else {
+        cv::resize(input, output, cv::Size(w2, dstSize.height));
+    }
+    int top = (dstSize.height - output.rows) / 2;
+    int down = (dstSize.height - output.rows + 1) / 2;
+    int left = (dstSize.width - output.cols) / 2;
+    int right = (dstSize.width - output.cols + 1) / 2;
+    cv::copyMakeBorder(output, output, top, down, left, right, cv::BORDER_CONSTANT, bgcolor);
+    return output;
+}
+
 int gstObject::addDB(std::string imgFilePath) {
     SetAdspLibraryPath();
     zdl::DlSystem::Runtime_t runtime = DSP_RUNTIME;
@@ -45,15 +62,16 @@ int gstObject::addDB(std::string imgFilePath) {
     std::string folderPath = DB_IMAGE_PATH;
     std::ofstream jsonFile;
     jsonFile.open(DB_PATH, std::ios::app);
-    SCRFD* det = new SCRFD();
-    SnpeInsightface* rec = new SnpeInsightface();
-    det->load(FACEDET_MODEL_PATH, runtime);
-    rec->load(FACEREC_MODEL_PATH, runtime);
+    // SCRFD* det = new SCRFD();
+    // SnpeInsightface* rec = new SnpeInsightface();
+    // det->load(FACEDET_MODEL_PATH, runtime);
+    // rec->load(FACEREC_MODEL_PATH, runtime);
     for (const auto& entry : std::filesystem::directory_iterator(folderPath)) {
         std::vector<FaceObject> faces;
         std::string filePath = entry.path().string();
         std::string fileName = entry.path().filename().string();
         cv::Mat img = cv::imread(filePath);
+        img = resizeKeepAspectRatio(img, cv::Size(640, 640), cv::Scalar(0, 0, 0));
         // copyMakeBorder(img, img, img.rows / 10, img.rows / 10, img.cols / 4, img.cols / 4, cv::BORDER_CONSTANT,
         //                cv::Scalar(0));
         det->execDetect(img, faces, 0.3, 0.45);
@@ -90,12 +108,9 @@ int gstObject::addDB(std::string imgFilePath) {
     return 0;
 }
 
-
 gstObject::gstObject(std::string url, int inputType, int i) {
     threadID = i;
     SetAdspLibraryPath();
-    det = std::make_unique<SCRFD>();
-    rec = std::make_unique<SnpeInsightface>();
     zdl::DlSystem::Runtime_t runtime = DSP_RUNTIME;
     runtime = checkRuntime(runtime);
     det->load(FACEDET_MODEL_PATH, runtime);
@@ -103,12 +118,16 @@ gstObject::gstObject(std::string url, int inputType, int i) {
     threadID = i;
     gst_init(nullptr, nullptr);
     if (inputType == INPUT_TYPE::VIDEO) {
-        std::string tmp = "uridecodebin uri=file://" + url +
-                          " ! videoconvert ! video/x-raw,format=I420 ! appsink name=sink sync=false";
+        // std::string tmp = "uridecodebin uri=file://" + url +
+        //                   " ! videoconvert ! video/x-raw,format=I420 ! appsink name=sink sync=false";
+        std::string tmp = "filesrc location=" + url +
+                          " ! qtdemux ! queue ! h264parse ! qtivdec ! videoconvert ! video/x-raw,format=I420 ! appsink name=sink sync=false";
         pipeline_ = gst_parse_launch(tmp.c_str(), nullptr);
     } else if (inputType == INPUT_TYPE::RTSP) {
+        // pipeline_ = gst_parse_launch("rtspsrc location=rtsp://192.169.1.53/stream1 ! rtph264depay ! h264parse ! qtivdec ! videoconvert ! video/x-raw,format=I420 ! appsink name=sink sync=false", NULL);
+        // pipeline_ = gst_parse_launch("rtspsrc location=rtsp://192.169.1.53/stream1 latency=0 ! rtph264depay ! avdec_h264 ! queue ! video/x-raw,format=I420 ! appsink name=sink sync=false", NULL);
         std::string tmp = "rtspsrc location=" + url +
-                          " latency=0 ! rtph264depay ! avdec_h264 ! videoconvert ! waylandsink name=sink sync=false";
+                          " ! rtph264depay ! h264parse ! qtivdec ! videoconvert ! video/x-raw,format=I420 ! appsink name=sink sync=false";
         pipeline_ = gst_parse_launch(tmp.c_str(), nullptr);
     } else {
     }
@@ -127,7 +146,6 @@ gstObject::~gstObject() {
 }
 
 GstFlowReturn gstObject::onNewSample(GstElement* appsink) {
-    std::unique_lock<std::mutex> lock(mutex_);
     GstSample* sample = gst_app_sink_pull_sample(GST_APP_SINK(appsink));
     GstCaps* caps = gst_sample_get_caps(sample);
     int width = 0, height = 0;
@@ -198,7 +216,7 @@ GstFlowReturn gstObject::onNewSample(GstElement* appsink) {
                 std::cout << face.label << " " << result.min_distance << std::endl;
             }
             faceObjs.push_back(face);
-            cv::imshow("win1", img);
+            // cv::imshow("win1", img);
             auto t2 = std::chrono::high_resolution_clock::now();
             auto ms_int = std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1);
             std::cout << "Thread " << threadID << ": FaceRec takes " << ms_int.count() << "ms\n";

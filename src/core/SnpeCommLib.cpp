@@ -27,12 +27,11 @@ std::unique_ptr<zdl::SNPE::SNPE> setBuilderOptions(std::unique_ptr<zdl::DlContai
                                                    zdl::DlSystem::StringList outputs) {
     std::unique_ptr<zdl::SNPE::SNPE> snpe;
     zdl::SNPE::SNPEBuilder snpeBuilder(container.get());
-    snpe = snpeBuilder.setOutputLayers(outputs)
-               .setRuntimeProcessorOrder(runtimeList)
-               .build();
+    snpe = snpeBuilder.setOutputLayers(outputs).setRuntimeProcessorOrder(runtimeList).build();
     return snpe;
 }
-std::unique_ptr<zdl::SNPE::SNPE> setBuilderSNPE(std::string containerPath, std::vector<std::string> outputLayers, zdl::DlSystem::Runtime_t target_device) {
+std::unique_ptr<zdl::SNPE::SNPE> setBuilderSNPE(std::string containerPath, std::vector<std::string> outputLayers,
+                                                zdl::DlSystem::Runtime_t target_device) {
     std::unique_ptr<zdl::DlContainer::IDlContainer> container;
     container = zdl::DlContainer::IDlContainer::open(zdl::DlSystem::String(containerPath.c_str()));
     if (container == nullptr) {
@@ -43,17 +42,15 @@ std::unique_ptr<zdl::SNPE::SNPE> setBuilderSNPE(std::string containerPath, std::
     DlSystem::RuntimeList runtimeList(target_device);
     zdl::DlSystem::StringList outputs;
     if (outputLayers.size() > 0) {
-        for (uint32_t i = 0; i < outputLayers.size(); i++)
-            outputs.append(outputLayers[i].c_str());
+        for (uint32_t i = 0; i < outputLayers.size(); i++) outputs.append(outputLayers[i].c_str());
     }
     std::unique_ptr<zdl::SNPE::SNPE> snpe;
     zdl::SNPE::SNPEBuilder snpeBuilder(container.get());
-    snpe = snpeBuilder.setOutputLayers(outputs)
-               .setRuntimeProcessorOrder(runtimeList)
-               .build();
+    snpe = snpeBuilder.setOutputLayers(outputs).setRuntimeProcessorOrder(runtimeList).build();
     return snpe;
 }
-std::unique_ptr<zdl::DlSystem::ITensor> convertMat2BgrFloat(std::unique_ptr<zdl::SNPE::SNPE> &snpe, const cv::Mat &img) {
+std::unique_ptr<zdl::DlSystem::ITensor> convertMat2BgrFloat(std::unique_ptr<zdl::SNPE::SNPE> &snpe,
+                                                            const cv::Mat &img) {
     std::unique_ptr<zdl::DlSystem::ITensor> input;
     const auto &strList_opt = snpe->getInputTensorNames();
     if (!strList_opt) throw std::runtime_error("Error obtaining Input tensor names");

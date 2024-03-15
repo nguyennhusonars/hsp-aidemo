@@ -31,7 +31,8 @@ typedef struct snpeBuilders {
 } snpeBuilders;
 
 int SetAdspLibraryPath();
-std::unique_ptr<zdl::SNPE::SNPE> setBuilderSNPE(std::string containerPath, std::vector<std::string> outputLayers, zdl::DlSystem::Runtime_t target_device);
+std::unique_ptr<zdl::SNPE::SNPE> setBuilderSNPE(std::string containerPath, std::vector<std::string> outputLayers,
+                                                zdl::DlSystem::Runtime_t target_device);
 zdl::DlSystem::Runtime_t checkRuntime(zdl::DlSystem::Runtime_t runtime);
 std::unique_ptr<zdl::DlContainer::IDlContainer> loadContainerFromFile(std::string containerPath);
 std::unique_ptr<zdl::SNPE::SNPE> setBuilderOptions(std::unique_ptr<zdl::DlContainer::IDlContainer>& container,

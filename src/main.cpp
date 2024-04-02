@@ -14,7 +14,6 @@
 
 #define BUILD_X86
 #define TEST_VIDEO
-#define NUM_THREADS 8
 
 std::vector<std::string> rtspLists = {
     "rtsp://192.169.1.53/stream1",
@@ -53,7 +52,7 @@ int main(int argc, char* argv[]) {
     } else {
         std::vector<gstObject*> gstObj(NUM_THREADS);
         for (int i = 0; i < NUM_THREADS; i++) {
-            gstObj[i] = new gstObject(rtspLists[i], INPUT_TYPE::RTSP, i);
+            gstObj[i] = new gstObject(videoLists[i], INPUT_TYPE::VIDEO, i);
             gstObj[i]->loadDB(DB_PATH);
             gstObj[i]->startThread();
         }

@@ -10,6 +10,7 @@
 #include <gst/gst.h>
 #include <gst/app/gstappsink.h>
 #include <gst/video/video.h>
+#include "cairo/cairo.h"
 
 #include <thread>
 #include <condition_variable>
@@ -18,6 +19,7 @@
 #define FACEREC_MODEL_PATH "../models/w600k_r50_quantized.dlc"
 #define DB_IMAGE_PATH "../models/images/"
 #define DB_PATH "../models/db.txt"
+#define NUM_THREADS 2
 
 typedef enum INPUT_TYPE {
     NONE = 0,
@@ -41,6 +43,9 @@ class gstObject {
     static GstFlowReturn onNewSampleStatic(GstElement* appsink, gpointer user_data) {
         return reinterpret_cast<gstObject*>(user_data)->onNewSample(appsink);
     }
+    static gboolean onDrawingStatic(GstElement* overlay, cairo_t *cr, gpointer user_data) {
+        return reinterpret_cast<gstObject*>(user_data)->onDrawing(overlay, cr);
+    }
     static void onEosStatic(GstBus* bus, GstMessage* msg, gpointer user_data) {
         g_print("End-of-Stream reached\n");
         g_main_loop_quit(reinterpret_cast<gstObject*>(user_data)->mainLoop_);
@@ -50,13 +55,11 @@ class gstObject {
 
     GstElement* pipeline_;
     GstAppSink* appsink_;
+    GstElement* overlay_;
     GstBus* bus_;
     std::thread decodeThread_;
-    std::mutex mutex_;
-    std::condition_variable condition_;
-    bool frameAvailable_ = false;
-    cv::Mat lastFrame_;
     GMainLoop* mainLoop_;
+    gboolean onDrawing(GstElement* overlay, cairo_t *cr);
     GstFlowReturn onNewSample(GstElement* appsink);
     void decode();
     GstBuffer* buffer;
@@ -65,8 +68,9 @@ class gstObject {
     int loadDB(std::string jsonFilePath);
     int addDB(std::string imgFilePath);
     std::unique_ptr<SCRFD> det = std::make_unique<SCRFD>();
-    std::unique_ptr<SnpeInsightface> rec = std::make_unique<SnpeInsightface>();;
+    std::unique_ptr<SnpeInsightface> rec = std::make_unique<SnpeInsightface>();
     std::vector<FaceObject> faceObjs;
+    FaceObject currentface;
     cv::Mat img;
 
    private:

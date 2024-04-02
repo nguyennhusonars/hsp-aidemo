@@ -65,4 +65,4 @@ TARGET_LINK_LIBRARIES(${PROJECT_NAME}
     /usr/lib/aarch64-linux-gnu/libgobject-2.0.so.0.6400.6
 ) 
 
-add_definitions(-O2 -pthread -frtti)
+add_definitions(-O0 -pthread -frtti)

@@ -1,4 +1,4 @@
-* Build and run demo on host side (Currentlys not support):
+* Build and run demo on host side (Currently not support):
   
   sudo apt-get update
   

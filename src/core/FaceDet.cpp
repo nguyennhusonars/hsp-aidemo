@@ -4,6 +4,7 @@
 #include <iostream>
 #include <opencv2/core/core.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
+#include "Util.hpp"
 
 SCRFD::SCRFD() {
     this->s = new scrfd_params;
@@ -202,7 +203,7 @@ int SCRFD::load(std::string containerPath, zdl::DlSystem::Runtime_t targetDevice
         std::cerr << "Error while building facedet object." << std::endl;
         return -1;
     }
-    std::cout << "Load facerec model successfully" << std::endl;
+    std::cout << "Load facedet model successfully" << std::endl;
     return 0;
 }
 
@@ -366,6 +367,7 @@ int SCRFD::execDetect(const cv::Mat &rgb, std::vector<FaceObject> &faceobjects, 
         faceobjects[i].point[4].x = x4 / (float)input_width * width;
         faceobjects[i].point[4].y = y4 / (float)input_height * height;
     }
+
     return 0;
 }
 

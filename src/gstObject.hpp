@@ -6,6 +6,7 @@
 
 #include "FaceDet.hpp"
 #include "FaceRec.hpp"
+#include "yolonas.h"
 
 #include <gst/gst.h>
 #include <gst/app/gstappsink.h>
@@ -19,13 +20,9 @@
 #define FACEREC_MODEL_PATH "../models/w600k_r50_quantized.dlc"
 #define DB_IMAGE_PATH "../models/images/"
 #define DB_PATH "../models/db.txt"
-#define NUM_THREADS 2
+#define NUM_THREADS 1
 
-typedef enum INPUT_TYPE {
-    NONE = 0,
-    VIDEO = 1,
-    RTSP = 2
-} INPUT_TYPE;
+typedef enum INPUT_TYPE { NONE = 0, VIDEO = 1, RTSP = 2 } INPUT_TYPE;
 
 class gstObject {
    public:
@@ -59,7 +56,7 @@ class gstObject {
     GstBus* bus_;
     std::thread decodeThread_;
     GMainLoop* mainLoop_;
-    gboolean onDrawing(GstElement* overlay, cairo_t *cr);
+    gboolean onDrawing(GstElement* overlay, cairo_t* cr);
     GstFlowReturn onNewSample(GstElement* appsink);
     void decode();
     GstBuffer* buffer;
@@ -69,6 +66,7 @@ class gstObject {
     int addDB(std::string imgFilePath);
     std::unique_ptr<SCRFD> det = std::make_unique<SCRFD>();
     std::unique_ptr<SnpeInsightface> rec = std::make_unique<SnpeInsightface>();
+    std::unique_ptr<yolonas> objDet = std::make_unique<yolonas>();
     std::vector<FaceObject> faceObjs;
     FaceObject currentface;
     cv::Mat img;

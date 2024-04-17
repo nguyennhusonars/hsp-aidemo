@@ -1,6 +1,6 @@
 #include "gstObject.hpp"
 #include "json.hpp"
-#include <gst/video/videooverlay.h>    
+#include <gst/video/videooverlay.h>
 #include <filesystem>
 #include <unistd.h>
 
@@ -31,7 +31,7 @@ int gstObject::loadDB(std::string jsonFilePath) {
     return 0;
 }
 
-cv::Mat resizeKeepAspectRatio(const cv::Mat &input, const cv::Size &dstSize, const cv::Scalar &bgcolor) {
+cv::Mat resizeKeepAspectRatio(const cv::Mat& input, const cv::Size& dstSize, const cv::Scalar& bgcolor) {
     cv::Mat output;
     double h1 = dstSize.width * (input.rows / (double)input.cols);
     double w2 = dstSize.height * (input.cols / (double)input.rows);
@@ -65,8 +65,7 @@ int gstObject::addDB(std::string imgFilePath) {
         //                cv::Scalar(0));
         det->execDetect(img, faces, 0.3, 0.45);
         if (faces.size() != 1) {
-            std::cout << "-- " << fileName << " currently has " << faces.size() << " face. Must has exactly 1 face"
-                      << std::endl;
+            std::cout << "-- " << fileName << " currently has " << faces.size() << " face. Must has exactly 1 face" << std::endl;
             std::filesystem::remove(filePath);
             continue;
         } else {
@@ -103,21 +102,22 @@ gstObject::gstObject(std::string url, int inputType, int i) {
     runtime = checkRuntime(runtime);
     det->load(FACEDET_MODEL_PATH, runtime);
     rec->load(FACEREC_MODEL_PATH, runtime);
+    // objDet->load(YOLOV8_MODEL_PATH, runtime);
     threadID = i;
     gst_init(nullptr, nullptr);
     if (inputType == INPUT_TYPE::VIDEO) {
         std::string tmp = "filesrc location=" + url +
-                            " ! qtdemux ! queue ! h264parse ! qtivdec skip-frames=yes turbo=yes ! tee name=t \
+                          " ! qtdemux ! queue ! h264parse ! qtivdec skip-frames=yes turbo=yes ! tee name=t \
                             t. ! queue ! qtivtransform ! video/x-raw,format=NV12 ! appsink name=sink sync=false \
                             t. ! queue ! qtivtransform ! cairooverlay name=overlay ! waylandsink sync=false x=" +
-                            std::to_string(i % 3 * 480) + " y=" + std::to_string(i / 3 * 240) + " width=480 height=240";
+                          std::to_string(i % 3 * 480) + " y=" + std::to_string(i / 3 * 240) + " width=480 height=240";
         pipeline_ = gst_parse_launch(tmp.c_str(), nullptr);
     } else if (inputType == INPUT_TYPE::RTSP) {
         std::string tmp = "rtspsrc location=" + url +
-                            " ! rtph264depay ! h264parse ! qtivdec skip-frames=yes turbo=yes ! tee name=t \
+                          " ! rtph264depay ! h264parse ! qtivdec skip-frames=yes turbo=yes ! tee name=t \
                             t. ! queue ! qtivtransform ! video/x-raw,format=I420 ! appsink name=sink sync=false \
                             t. ! queue ! qtivtransform ! cairooverlay name=overlay ! waylandsink sync=false x=" +
-                            std::to_string(i % 3 * 480) + " y=" + std::to_string(i / 3 * 240) + " width=480 height=240";
+                          std::to_string(i % 3 * 480) + " y=" + std::to_string(i / 3 * 240) + " width=480 height=240";
         pipeline_ = gst_parse_launch(tmp.c_str(), nullptr);
     }
 
@@ -140,26 +140,28 @@ gstObject::~gstObject() {
     gst_object_unref(bus_);
 }
 
-std::vector<FaceObject> gfaces;
-gboolean gstObject::onDrawing(GstElement* overlay, cairo_t *cr) {
+int tid;
+std::vector<std::vector<FaceObject>> gfaces(NUM_THREADS);
+gboolean gstObject::onDrawing(GstElement* overlay, cairo_t* cr) {
     // std::cout << threadID << std::endl;
-    cairo_set_operator (cr, CAIRO_OPERATOR_OVER);
-    cairo_select_font_face (cr, "@cairo:Georgia", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_BOLD);
-    cairo_set_antialias (cr, CAIRO_ANTIALIAS_BEST);
+    std::vector<FaceObject> tmp = gfaces[tid];
+    cairo_set_operator(cr, CAIRO_OPERATOR_OVER);
+    cairo_select_font_face(cr, "@cairo:Georgia", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_BOLD);
+    cairo_set_antialias(cr, CAIRO_ANTIALIAS_BEST);
     {
-        cairo_font_options_t *options = cairo_font_options_create ();
-        cairo_font_options_set_antialias (options, CAIRO_ANTIALIAS_BEST);
-        cairo_set_font_options (cr, options);
-        cairo_font_options_destroy (options);
-        cairo_set_font_size (cr, 50);
+        cairo_font_options_t* options = cairo_font_options_create();
+        cairo_font_options_set_antialias(options, CAIRO_ANTIALIAS_BEST);
+        cairo_set_font_options(cr, options);
+        cairo_font_options_destroy(options);
+        cairo_set_font_size(cr, 50);
     }
     cairo_set_source_rgba(cr, 0.0, 1.0, 0.0, 1.0);
-    for (auto curFace : gfaces) {
-        cairo_set_line_width (cr, 10);
+    for (auto curFace : tmp) {
+        cairo_set_line_width(cr, 10);
         cairo_rectangle(cr, curFace.rect.x, curFace.rect.y, curFace.rect.width, curFace.rect.height);
-        cairo_move_to (cr, curFace.rect.x, curFace.rect.y);
-        cairo_show_text (cr, curFace.label.c_str());
-        cairo_stroke (cr);
+        cairo_move_to(cr, curFace.rect.x, curFace.rect.y);
+        cairo_show_text(cr, curFace.label.c_str());
+        cairo_stroke(cr);
     }
     return true;
 }
@@ -199,50 +201,55 @@ GstFlowReturn gstObject::onNewSample(GstElement* appsink) {
             return GST_FLOW_OK;
         }
         cv::Mat img = frame.clone();
+        img = cv::imread("/home/car.jpg");
         std::vector<FaceObject> faces;
         std::cout << "=============================================" << std::endl;
         auto t1 = std::chrono::high_resolution_clock::now();
-        det->execDetect(img, faces);
+        // det->execDetect(img, faces);
+        objDet->execDetect(img);
+        // sortTracking
         auto t2 = std::chrono::high_resolution_clock::now();
         auto ms_int = std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1);
         std::cout << "Thread " << threadID << ": FaceDet takes " << ms_int.count() << "ms\n";
-        std::cout << "Thread " << threadID << ": Frame has " << faces.size() << " faces" << std::endl;
-        faceObjs.clear();
-        for (uint32_t i = 0; i < faces.size(); i++) {
-            auto t1 = std::chrono::high_resolution_clock::now();
-            currentface = faces[i];
-            float v2[5][2] = {{float(currentface.point[0].x), float(currentface.point[0].y)},
-                              {float(currentface.point[1].x), float(currentface.point[1].y)},
-                              {float(currentface.point[2].x), float(currentface.point[2].y)},
-                              {float(currentface.point[3].x), float(currentface.point[3].y)},
-                              {float(currentface.point[4].x), float(currentface.point[4].y)}};
-            cv::Mat src(5, 2, CV_32FC1, norm_face);
-            cv::Mat dst(5, 2, CV_32FC1, v2);
-            cv::Mat m = similarTransform(dst, src);
-            cv::Size size(112, 112);
-            cv::Mat aligned(112, 112, CV_32FC3);
-            cv::Mat transfer = m(cv::Rect(0, 0, 3, 2));
-            cv::warpAffine(img, aligned, transfer, size, 1, 0, 0);
-            cv::Mat output = rec->execRecog(aligned);
-            if (!feat.empty()) {
-                class_info result = rec->classify(output, feat);
-                if (result.min_distance < RECOGNITION_THRESHOLD) {
-                    currentface.label = ids[result.index];
-                } else {
-                    currentface.label = "Unknown";
-                }
-                std::cout << currentface.label << " " << result.min_distance << std::endl;
-            }
-            faceObjs.push_back(currentface);
-            auto t2 = std::chrono::high_resolution_clock::now();
-            auto ms_int = std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1);
-            std::cout << "Thread " << threadID << ": FaceRec takes " << ms_int.count() << "ms\n";
-            
-            gfaces = faceObjs;
+    //     std::cout << "Thread " << threadID << ": Frame has " << faces.size() << " faces" << std::endl;
+    //     faceObjs.clear();
+    //     for (uint32_t i = 0; i < faces.size(); i++) {
+    //         auto t1 = std::chrono::high_resolution_clock::now();
+    //         currentface = faces[i];
+    //         float v2[5][2] = {{float(currentface.point[0].x), float(currentface.point[0].y)},
+    //                           {float(currentface.point[1].x), float(currentface.point[1].y)},
+    //                           {float(currentface.point[2].x), float(currentface.point[2].y)},
+    //                           {float(currentface.point[3].x), float(currentface.point[3].y)},
+    //                           {float(currentface.point[4].x), float(currentface.point[4].y)}};
+    //         cv::Mat src(5, 2, CV_32FC1, norm_face);
+    //         cv::Mat dst(5, 2, CV_32FC1, v2);
+    //         cv::Mat m = similarTransform(dst, src);
+    //         cv::Size size(112, 112);
+    //         cv::Mat aligned(112, 112, CV_32FC3);
+    //         cv::Mat transfer = m(cv::Rect(0, 0, 3, 2));
+    //         cv::warpAffine(img, aligned, transfer, size, 1, 0, 0);
+    //         cv::Mat output = rec->execRecog(aligned);
+    //         if (!feat.empty()) {
+    //             class_info result = rec->classify(output, feat);
+    //             if (result.min_distance < RECOGNITION_THRESHOLD) {
+    //                 currentface.label = ids[result.index];
+    //             } else {
+    //                 currentface.label = "Unknown";
+    //             }
+    //             std::cout << currentface.label << " " << result.min_distance << std::endl;
+    //         }
+    //         faceObjs.push_back(currentface);
+    //         auto t2 = std::chrono::high_resolution_clock::now();
+    //         auto ms_int = std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1);
+    //         std::cout << "Thread " << threadID << ": FaceRec takes " << ms_int.count() << "ms\n";
 
-            overlay_ = gst_bin_get_by_name(GST_BIN(pipeline_), "overlay");
-            g_signal_connect(overlay_, "draw", G_CALLBACK(onDrawingStatic), NULL);
-        }
+    //         tid = threadID;
+    //         gfaces[tid] = faceObjs;
+
+    //         overlay_ = gst_bin_get_by_name(GST_BIN(pipeline_), "overlay");
+    //         g_signal_connect(overlay_, "draw", G_CALLBACK(onDrawingStatic), NULL);
+    //         // usleep(30000);
+    //     }
         gst_buffer_unmap(buffer, &map_info);
     }
     gst_sample_unref(sample);

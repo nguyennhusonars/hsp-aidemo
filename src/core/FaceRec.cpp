@@ -26,7 +26,7 @@ int SnpeInsightface::load(std::string containerPath, zdl::DlSystem::Runtime_t ta
         std::cerr << "Error while building facerec object." << std::endl;
         return -1;
     }
-    std::cout << "Load facedet model successfully" << std::endl;
+    std::cout << "Load facerec model successfully" << std::endl;
     return 0;
 }
 

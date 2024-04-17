@@ -30,10 +30,12 @@ INCLUDE_DIRECTORIES(
     ${CMAKE_SOURCE_DIR}/include/SNPE2.19
     ${CMAKE_SOURCE_DIR}/src
     ${CMAKE_SOURCE_DIR}/src/core
+    ${CMAKE_SOURCE_DIR}/src/tracking
 )
 
 file (GLOB SRC_FILES 
     ${CMAKE_SOURCE_DIR}/src/core/*.cpp
+    ${CMAKE_SOURCE_DIR}/src/tracking/*.cpp
     ${CMAKE_SOURCE_DIR}/src/*.cpp
 )
 
@@ -57,6 +59,7 @@ TARGET_LINK_LIBRARIES(${PROJECT_NAME}
     -lopencv_imgproc
     -lopencv_imgcodecs
     -lopencv_videoio
+    -lopencv_video
     -lopencv_highgui
     -lSNPE
     /usr/lib/aarch64-linux-gnu/libgstreamer-1.0.so.0.1603.0

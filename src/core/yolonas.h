@@ -14,14 +14,23 @@
 #include <string>
 #include <vector>
 #include <thread>
-#include "qcsnpe.hpp"
+
+#include <DlContainer/IDlContainer.hpp>
+#include <DlSystem/RuntimeList.hpp>
+#include <SNPE/SNPE.hpp>
+#include <SNPE/SNPEBuilder.hpp>
+#include <DlSystem/ITensorFactory.hpp>
+#include <SNPE/SNPEFactory.hpp>
+
+#include <opencv2/opencv.hpp>
+#include <opencv2/imgproc.hpp>
+#include <chrono>
+#include <ctime>
+#include "SnpeCommLib.hpp"
+
+// #include "qcsnpe.hpp"
 
 #define OUTPUT_LAYER_1 "/model.24/Concat_15"
-
-typedef struct {
-    int width;
-    int height;
-} YoloSize;
 
 typedef struct BoxInfo {
     int x1;
@@ -40,50 +49,26 @@ typedef struct TrackingBox {
     std::string mappedName;
 } TrackingBox;
 
-typedef struct {
-    std::string index;
-    int stride;
-    std::vector<YoloSize> anchors;
-    int grid_size;
-} YoloLayerData;
-
 class yolonas {
+private:
+    std::unique_ptr<zdl::SNPE::SNPE> snpeYolonas;
+
 public:
     yolonas();
     ~yolonas();
-    yolonas(const yolonas &other) = delete;
-    yolonas &operator=(const yolonas &other) = delete;
-    void nms(std::vector<BoxInfo> &input_boxes, float NMS_THRESH);
+    // yolonas(const yolonas &other) = delete;
+    // yolonas &operator=(const yolonas &other) = delete;
     int load(std::string model_path, zdl::DlSystem::Runtime_t targetDevice);
     cv::Mat execDetect(cv::Mat mat);
-    std::vector<BoxInfo>postprocess(float *dataSource, float *dataSource_1, const YoloSize &frame_size,
+    std::vector<BoxInfo>postprocess(float *dataSource, float *dataSource_1, int yoloSize,
                                   int left, int top,
                                   int num_classes, float threshold);
-
-private:
-    // OpenCV values
-    cv::Mat img_mat;
-    cv::Mat bgr_img;
-    cv::Mat grey_img;
-    cv::Mat rgb_img;
-    cv::Mat out_img;
-    Qcsnpe *qc;
-    cv::VideoWriter video_writer;
-    std::string model_path = "/home/demo/hsp-aidemo-master/models/yolo_nas_s_v213_quantized.dlc";
+    void nms(std::vector<BoxInfo> &input_boxes, float NMS_THRESH);
     std::vector<std::string> output_layers{"/heads/Sigmoid", "/heads/Mul"};
-    std::vector<std::vector<float>> pred_out;
-    const float INPUT_WIDTH = 320.0;
-    const float INPUT_HEIGHT = 320.0;
-    const float NMS_THRESHOLD = 0.5;
-    const float CONFIDENCE_THRESHOLD = 0.4;
 
-    struct Detection {
-        int class_id;
-        float confidence;
-        cv::Rect box;
-    };
-
-    float im_scale;
+    const int yolonas_size = 320;
+    const float yolonas_threshold = 0.3f;
+    const int yolonas_classes = 80;
 };
 
 #endif

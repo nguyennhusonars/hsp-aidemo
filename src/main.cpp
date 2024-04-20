@@ -28,24 +28,27 @@ int main(int argc, char* argv[]) {
     if (argc > 1) {
         std::string command = argv[1];
         if (command == "--add") {
-            gstObject* gstObj = new gstObject("/home/demo/hsp-aidemo-master/models/testFR.mp4", INPUT_TYPE::VIDEO, 0);
+            gstObject* gstObj = new gstObject("", INPUT_TYPE::NONE, 0);
             gstObj->addDB(DB_IMAGE_PATH);
             return 0;
         } else if (command == "--remove") {
             return 0;
-        } else {
-            return 0;
-        }
+        } else if (command == "--fr") {
+            std::vector<gstObject*> gstObj(NUM_THREADS);
+            for (int i = 0; i < NUM_THREADS; i++) {
+                // gstObj[i] = new gstObject(videoLists[i], INPUT_TYPE::VIDEO, i);
+                gstObj[i] = new gstObject(videoLists[i], INPUT_TYPE::VIDEO, i);
+                gstObj[i]->loadDB(DB_PATH);
+                gstObj[i]->startThread();
+            }
+            for (int i = 0; i < NUM_THREADS; i++) {
+                gstObj[i]->joinThread();
+            }
+        } else if (command == "yolo") {
+
+        } 
     } else {
-        std::vector<gstObject*> gstObj(NUM_THREADS);
-        for (int i = 0; i < NUM_THREADS; i++) {
-            gstObj[i] = new gstObject(videoLists[i], INPUT_TYPE::VIDEO, i);
-            gstObj[i]->loadDB(DB_PATH);
-            gstObj[i]->startThread();
-        }
-        for (int i = 0; i < NUM_THREADS; i++) {
-            gstObj[i]->joinThread();
-        }
+        return 0;
     }
     sleep(2000);
     return 0;

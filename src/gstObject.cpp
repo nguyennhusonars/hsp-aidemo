@@ -102,7 +102,7 @@ gstObject::gstObject(std::string url, int inputType, int i) {
     runtime = checkRuntime(runtime);
     det->load(FACEDET_MODEL_PATH, runtime);
     rec->load(FACEREC_MODEL_PATH, runtime);
-    // objDet->load(YOLOV8_MODEL_PATH, runtime);
+    objDet->load(YOLOV8_MODEL_PATH, runtime);
     threadID = i;
     gst_init(nullptr, nullptr);
     if (inputType == INPUT_TYPE::VIDEO) {
@@ -115,7 +115,7 @@ gstObject::gstObject(std::string url, int inputType, int i) {
     } else if (inputType == INPUT_TYPE::RTSP) {
         std::string tmp = "rtspsrc location=" + url +
                           " ! rtph264depay ! h264parse ! qtivdec skip-frames=yes turbo=yes ! tee name=t \
-                            t. ! queue ! qtivtransform ! video/x-raw,format=I420 ! appsink name=sink sync=false \
+                            t. ! queue ! qtivtransform ! video/x-raw,format=NV12 ! appsink name=sink sync=false \
                             t. ! queue ! qtivtransform ! cairooverlay name=overlay ! waylandsink sync=false x=" +
                           std::to_string(i % 3 * 480) + " y=" + std::to_string(i / 3 * 240) + " width=480 height=240";
         pipeline_ = gst_parse_launch(tmp.c_str(), nullptr);

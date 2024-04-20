@@ -18,6 +18,7 @@
 
 #define FACEDET_MODEL_PATH "../models/det_500m_quantized.dlc"
 #define FACEREC_MODEL_PATH "../models/w600k_r50_quantized.dlc"
+#define YOLOV8_MODEL_PATH "../models/yolo_nas_s_v213_quantized.dlc"
 #define DB_IMAGE_PATH "../models/images/"
 #define DB_PATH "../models/db.txt"
 #define NUM_THREADS 1

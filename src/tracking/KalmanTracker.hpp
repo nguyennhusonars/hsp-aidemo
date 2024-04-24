@@ -23,7 +23,7 @@ public:
 		m_id = kf_count;
 		//kf_count++;
 	}
-	KalmanTracker(StateType initRect)
+	KalmanTracker(StateType initRect, std::vector<cv::Point2f> pts)
 	{
 		init_kf(initRect);
 		m_time_since_update = 0;
@@ -32,6 +32,7 @@ public:
 		m_age = 0;
 		m_id = kf_count;
 		kf_count++;
+		lms = pts;
 	}
 
 	~KalmanTracker()
@@ -40,7 +41,7 @@ public:
 	}
 
 	StateType predict();
-	void update(StateType stateMat);
+	void update(StateType stateMat, std::vector<cv::Point2f> pts);
 	
 	StateType get_state();
 	StateType get_rect_xysr(float cx, float cy, float s, float r);
@@ -52,6 +53,7 @@ public:
 	int m_hit_streak;
 	int m_age;
 	int m_id;
+	std::vector<cv::Point2f> lms;
 
 private:
 	void init_kf(StateType stateMat);

@@ -74,8 +74,10 @@ class gstObject : public TrackProcess {
     std::unique_ptr<SCRFD> det = std::make_unique<SCRFD>();
     std::unique_ptr<SnpeInsightface> rec = std::make_unique<SnpeInsightface>();
     std::unique_ptr<yolonas> objDet = std::make_unique<yolonas>();
-    std::vector<FaceObject> faceObjs;
-    FaceObject currentface;
+    // std::vector<FaceObject> faceObjs;
+    // FaceObject currentface;
+    std::vector<TrackingBox> faceObjs;
+    TrackingBox currentface;
     cv::Mat img;
 
    private:

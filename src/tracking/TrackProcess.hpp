@@ -29,7 +29,9 @@ typedef struct TrackingBox {
     int status = 0;  // 1: true , 0: false,
     std::string mappedID;
     std::string mappedName;
-    cv::Point2f point[5];
+
+    std::string label;
+    std::vector<cv::Point2f> points;
 } TrackingBox;
 
 class TrackProcess {
@@ -58,6 +60,7 @@ class TrackProcess {
     std::vector<TrackingBox> frameTrackingResult;
     std::vector<TrackingBox> frameTrackingResult_ori;
     void sortTracking(std::vector<TrackingBox> &detData);
+	std::map<int, std::string> listTr;
     // void mappingKalmanObj(std::vector<TrackingBox> &detData);
 };
 

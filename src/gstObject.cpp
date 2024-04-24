@@ -144,10 +144,35 @@ gstObject::~gstObject() {
 }
 
 int tid;
-std::vector<std::vector<FaceObject>> gfaces(NUM_THREADS);
+// std::vector<std::vector<FaceObject>> gfaces(NUM_THREADS);
+// gboolean gstObject::onDrawing(GstElement* overlay, cairo_t* cr) {
+//     // std::cout << threadID << std::endl;
+//     std::vector<FaceObject> tmp = gfaces[tid];
+//     cairo_set_operator(cr, CAIRO_OPERATOR_OVER);
+//     cairo_select_font_face(cr, "@cairo:Georgia", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_BOLD);
+//     cairo_set_antialias(cr, CAIRO_ANTIALIAS_BEST);
+//     {
+//         cairo_font_options_t* options = cairo_font_options_create();
+//         cairo_font_options_set_antialias(options, CAIRO_ANTIALIAS_BEST);
+//         cairo_set_font_options(cr, options);
+//         cairo_font_options_destroy(options);
+//         cairo_set_font_size(cr, 50);
+//     }
+//     cairo_set_source_rgba(cr, 0.0, 1.0, 0.0, 1.0);
+//     for (auto curFace : tmp) {
+//         cairo_set_line_width(cr, 10);
+//         cairo_rectangle(cr, curFace.rect.x, curFace.rect.y, curFace.rect.width, curFace.rect.height);
+//         cairo_move_to(cr, curFace.rect.x, curFace.rect.y);
+//         cairo_show_text(cr, curFace.label.c_str());
+//         cairo_stroke(cr);
+//     }
+//     return true;
+// }
+
+std::vector<std::vector<TrackingBox>> gfaces(NUM_THREADS);
 gboolean gstObject::onDrawing(GstElement* overlay, cairo_t* cr) {
     // std::cout << threadID << std::endl;
-    std::vector<FaceObject> tmp = gfaces[tid];
+    std::vector<TrackingBox> tmp = gfaces[tid];
     cairo_set_operator(cr, CAIRO_OPERATOR_OVER);
     cairo_select_font_face(cr, "@cairo:Georgia", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_BOLD);
     cairo_set_antialias(cr, CAIRO_ANTIALIAS_BEST);
@@ -161,8 +186,8 @@ gboolean gstObject::onDrawing(GstElement* overlay, cairo_t* cr) {
     cairo_set_source_rgba(cr, 0.0, 1.0, 0.0, 1.0);
     for (auto curFace : tmp) {
         cairo_set_line_width(cr, 10);
-        cairo_rectangle(cr, curFace.rect.x, curFace.rect.y, curFace.rect.width, curFace.rect.height);
-        cairo_move_to(cr, curFace.rect.x, curFace.rect.y);
+        cairo_rectangle(cr, curFace.box.x, curFace.box.y, curFace.box.width, curFace.box.height);
+        cairo_move_to(cr, curFace.box.x, curFace.box.y);
         cairo_show_text(cr, curFace.label.c_str());
         cairo_stroke(cr);
     }
@@ -214,39 +239,58 @@ GstFlowReturn gstObject::onNewSample(GstElement* appsink) {
         sortTracking(ftracks);
         auto t2 = std::chrono::high_resolution_clock::now();
         auto ms_int = std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1);
-        // std::cout << "Thread " << threadID << ": FaceDet takes " << ms_int.count() << "ms\n";
-        // std::cout << "Thread " << threadID << ": Frame has " << faces.size() << " faces" << std::endl;
+        std::cout << "Thread " << threadID << ": FaceDet takes " << ms_int.count() << "ms\n";
+        std::cout << "Thread " << threadID << ": Frame has " << faces.size() << " faces" << std::endl;
         faceObjs.clear();
-        for (uint32_t i = 0; i < faces.size(); i++) {
+        for (uint32_t i = 0; i < frameTrackingResult.size(); i++) {
             auto t3 = std::chrono::high_resolution_clock::now();
-            currentface = faces[i];
-            float v2[5][2] = {{float(currentface.point[0].x), float(currentface.point[0].y)},
-                              {float(currentface.point[1].x), float(currentface.point[1].y)},
-                              {float(currentface.point[2].x), float(currentface.point[2].y)},
-                              {float(currentface.point[3].x), float(currentface.point[3].y)},
-                              {float(currentface.point[4].x), float(currentface.point[4].y)}};
-            cv::Mat src(5, 2, CV_32FC1, norm_face);
-            cv::Mat dst(5, 2, CV_32FC1, v2);
-            cv::Mat m = similarTransform(dst, src);
-            cv::Size size(112, 112);
-            cv::Mat aligned(112, 112, CV_32FC3);
-            cv::Mat transfer = m(cv::Rect(0, 0, 3, 2));
-            cv::warpAffine(img, aligned, transfer, size, 1, 0, 0);
-            cv::Mat output = rec->execRecog(aligned);
-            if (!feat.empty()) {
-                class_info result = rec->classify(output, feat);
-                if (result.min_distance < RECOGNITION_THRESHOLD) {
-                    currentface.label = ids[result.index];
-                } else {
-                    currentface.label = "Unknown";
-                }
-                printf("%s %f, x: %d, y: %d, w: %d, h: %d\n", currentface.label.c_str(), result.min_distance, 
-                    (int)currentface.rect.x, (int)currentface.rect.y, (int)currentface.rect.width, (int)currentface.rect.height);
+            // std::vector<int> key;
+            // std::vector<string>name;
+            // for(std::map<int,string>::iterator it = listTr.begin(); it !=listTr.end(); ++it) {
+            // key.push_back(it->first);
+            // name.push_back(it->second);
+            // std::cout << "Key: " << it->first << std::endl;
+            // std::cout << "Value: " << it->second << std::endl;
+            // }
+            currentface = frameTrackingResult[i];
+            auto it = listTr.find(currentface.trackID);
+            if (it != listTr.end()) {
+                printf("Already recog trackID %d: %s, x: %d, y: %d, w: %d, h: %d\n", currentface.trackID, listTr[currentface.trackID].c_str(), 
+                    (int)currentface.box.x, (int)currentface.box.y, (int)currentface.box.width, (int)currentface.box.height);
+                currentface.label = listTr[currentface.trackID];
             }
+            else {
+                float v2[5][2] = {{float(currentface.points[0].x), float(currentface.points[0].y)},
+                                {float(currentface.points[1].x), float(currentface.points[1].y)},
+                                {float(currentface.points[2].x), float(currentface.points[2].y)},
+                                {float(currentface.points[3].x), float(currentface.points[3].y)},
+                                {float(currentface.points[4].x), float(currentface.points[4].y)}};            
+                cv::Mat src(5, 2, CV_32FC1, norm_face);
+                cv::Mat dst(5, 2, CV_32FC1, v2);
+                cv::Mat m = similarTransform(dst, src);
+                cv::Size size(112, 112);
+                cv::Mat aligned(112, 112, CV_32FC3);
+                cv::Mat transfer = m(cv::Rect(0, 0, 3, 2));
+                cv::warpAffine(img, aligned, transfer, size, 1, 0, 0);
+                cv::Mat output = rec->execRecog(aligned);
+                class_info result;
+                if (!feat.empty()) {
+                    result = rec->classify(output, feat);
+                    if (result.min_distance < RECOGNITION_THRESHOLD) {
+                        currentface.label = ids[result.index];
+                    } else {
+                        currentface.label = "Unknown";
+                    }
+                }
+                printf("First recog trackID %d: %s\n", currentface.trackID, currentface.label.c_str());
+            }
+            // printf("TrackID %d, %s %f, x: %d, y: %d, w: %d, h: %d\n", currentface.trackID, currentface.label.c_str(), result.min_distance, 
+            //     (int)currentface.box.x, (int)currentface.box.y, (int)currentface.box.width, (int)currentface.box.height);
+            listTr[currentface.trackID] = currentface.label;
             faceObjs.push_back(currentface);
             auto t4 = std::chrono::high_resolution_clock::now();
             auto ms_int = std::chrono::duration_cast<std::chrono::milliseconds>(t4 - t3);
-            // std::cout << "Thread " << threadID << ": FaceRec takes " << ms_int.count() << "ms\n";
+            std::cout << "Thread " << threadID << ": FaceRec takes " << ms_int.count() << "ms\n";
 
             tid = threadID;
             gfaces[tid] = faceObjs;

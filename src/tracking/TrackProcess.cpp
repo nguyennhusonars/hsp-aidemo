@@ -8,6 +8,10 @@ std::vector<TrackingBox> faceToTracking(std::vector<FaceObject> objs) {
         tempTrackingBox.box.y = objs[i].rect.y;
         tempTrackingBox.box.width = (objs[i].rect.width);
         tempTrackingBox.box.height = (objs[i].rect.height);
+        tempTrackingBox.label = objs[i].label;
+        for (int j = 0; j < 5; j++) {
+            tempTrackingBox.points.push_back(objs[i].point[j]);
+        }
         convertVector.push_back(tempTrackingBox);
     }
     return convertVector;
@@ -54,7 +58,7 @@ void mapDetObj(TrackingBox frameTrackingResult, std::vector<TrackingBox> &dets) 
 void TrackProcess::sortTracking(std::vector<TrackingBox> &detData) {
     if (trackers.size() == 0) {
         for (unsigned int i = 0; i < detData.size(); i++) {
-            KalmanTracker trk = KalmanTracker(detData[i].box);
+            KalmanTracker trk = KalmanTracker(detData[i].box, detData[i].points);
             trackers.push_back(trk);
             // trackers_ori.push_back(detData[i].box);
         }
@@ -123,11 +127,11 @@ void TrackProcess::sortTracking(std::vector<TrackingBox> &detData) {
         trkIdx = matchedPairs[i].x;
         detIdx = matchedPairs[i].y;
 
-        trackers[trkIdx].update(detData[detIdx].box);
+        trackers[trkIdx].update(detData[detIdx].box, detData[detIdx].points);
     }
     // // create and initialise new trackers for unmatched detections
     for (auto umd : unmatchedDetections) {
-        KalmanTracker tracker = KalmanTracker(detData[umd].box);
+        KalmanTracker tracker = KalmanTracker(detData[umd].box, detData[umd].points);
         trackers.push_back(tracker);
     }
     // // get trackers' output
@@ -137,14 +141,17 @@ void TrackProcess::sortTracking(std::vector<TrackingBox> &detData) {
             TrackingBox res;
             res.box = (*it).get_state();
             res.trackID = (*it).m_id;
+            res.points = (*it).lms;
             frameTrackingResult.push_back(res);
             it++;
         } else
             it++;
 
         // remove dead tracklet
-        if (it != trackers.end() && (*it).m_time_since_update > max_age) it = trackers.erase(it);
+        if (it != trackers.end() && (*it).m_time_since_update > max_age) {
+            it = trackers.erase(it);   
+        }
     }
-    for (auto tb : frameTrackingResult)
-        printf("TrackID %d, x: %d, y: %d, w: %d, h: %d\n", tb.trackID, tb.box.x, tb.box.y, tb.box.width, tb.box.height);
+    // for (auto tb : frameTrackingResult)
+    //     printf("TrackID %d, x: %d, y: %d, w: %d, h: %d\n", tb.trackID, tb.box.x, tb.box.y, tb.box.width, tb.box.height);
 }

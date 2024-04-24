@@ -26,6 +26,7 @@ std::vector<std::string> videoLists = {"/home/demo/hsp-aidemo-master/models/frte
 #ifdef MAIN
 int main(int argc, char* argv[]) {
     if (argc > 1) {
+#ifdef TEST_FR
         std::string command = argv[1];
         if (command == "--add") {
             gstObject* gstObj = new gstObject("", INPUT_TYPE::NONE, 0);
@@ -33,22 +34,21 @@ int main(int argc, char* argv[]) {
             return 0;
         } else if (command == "--remove") {
             return 0;
-        } else if (command == "--fr") {
-            std::vector<gstObject*> gstObj(NUM_THREADS);
-            for (int i = 0; i < NUM_THREADS; i++) {
-                // gstObj[i] = new gstObject(videoLists[i], INPUT_TYPE::VIDEO, i);
-                gstObj[i] = new gstObject(videoLists[i], INPUT_TYPE::VIDEO, i);
-                gstObj[i]->loadDB(DB_PATH);
-                gstObj[i]->startThread();
-            }
-            for (int i = 0; i < NUM_THREADS; i++) {
-                gstObj[i]->joinThread();
-            }
-        } else if (command == "yolo") {
-
         } 
+#endif
     } else {
-        return 0;
+        std::vector<gstObject*> gstObj(NUM_THREADS);
+        for (int i = 0; i < NUM_THREADS; i++) {
+            // gstObj[i] = new gstObject(videoLists[i], INPUT_TYPE::VIDEO, i);
+            gstObj[i] = new gstObject(videoLists[i], INPUT_TYPE::VIDEO, i);
+#ifdef TEST_FR
+            gstObj[i]->loadDB(DB_PATH);
+#endif
+            gstObj[i]->startThread();
+        }
+        for (int i = 0; i < NUM_THREADS; i++) {
+            gstObj[i]->joinThread();
+        }
     }
     sleep(2000);
     return 0;

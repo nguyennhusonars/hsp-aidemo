@@ -1,4 +1,3 @@
-#include "yolonas.h"
 #include <unistd.h>
 #include <cmath>
 #include <opencv2/core/core.hpp>
@@ -9,6 +8,8 @@
 #include <dirent.h>
 #include <stdio.h>
 #include <opencv2/imgproc/types_c.h>
+
+#include "yolonas.hpp"
 
 yolonas::yolonas() {
     this->snpeYolonas = std::unique_ptr<zdl::SNPE::SNPE>();
@@ -42,7 +43,7 @@ int yolonas::load(std::string containerPath, zdl::DlSystem::Runtime_t targetDevi
     return 0;
 }
 
-cv::Mat yolonas::execDetect(cv::Mat mat) {
+cv::Mat yolonas::execDetect(cv::Mat mat, std::vector<BoxInfo> &result) {
     cv::Mat img_mat = mat;
     cv::Mat input_mat;
     float im_scale = std::min((float)yolonas_size / img_mat.cols, (float)yolonas_size / img_mat.rows);
@@ -101,8 +102,7 @@ cv::Mat yolonas::execDetect(cv::Mat mat) {
     zdl::DlSystem::ITensor *out_itensor = output_tensor_map.getTensor(out_tensors.at(0));
     zdl::DlSystem::ITensor *out_itensor_1 = output_tensor_map.getTensor(out_tensors.at(1));
 
-    // auto boxes = yolonas::postproess(out_itensor->begin().dataPointer(), out_itensor_1->begin().dataPointer(), (int)img_mat.cols, left, top, 80, CONFIDENCE_THRESHOLD);
-    std::vector<BoxInfo> result;
+    // std::vector<BoxInfo> result;
     float *data = out_itensor->begin().dataPointer();
     float *dataSource_1 = out_itensor_1->begin().dataPointer();
     std::vector<float> confidences;

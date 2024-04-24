@@ -46,7 +46,8 @@ std::unique_ptr<zdl::SNPE::SNPE> setBuilderSNPE(std::string containerPath, std::
     }
     std::unique_ptr<zdl::SNPE::SNPE> snpe;
     zdl::SNPE::SNPEBuilder snpeBuilder(container.get());
-    snpe = snpeBuilder.setOutputLayers(outputs).setRuntimeProcessorOrder(runtimeList).build();
+    snpe = snpeBuilder.setOutputLayers(outputs).setRuntimeProcessorOrder(runtimeList)
+                        .setPerformanceProfile(zdl::DlSystem::PerformanceProfile_t::HIGH_PERFORMANCE).build();
     return snpe;
 }
 std::unique_ptr<zdl::DlSystem::ITensor> convertMat2BgrFloat(std::unique_ptr<zdl::SNPE::SNPE> &snpe,

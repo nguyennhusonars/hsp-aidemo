@@ -1,6 +1,6 @@
 
-#ifndef PERSONDETECTION_CAMERAAPP_H
-#define PERSONDETECTION_CAMERAAPP_H
+#ifndef YOLONAS_H
+#define YOLONAS_H
 
 #include <opencv2/core.hpp>
 #include <opencv2/imgproc.hpp>
@@ -27,27 +27,11 @@
 #include <chrono>
 #include <ctime>
 #include "SnpeCommLib.hpp"
+#include "TrackProcess.hpp"
 
 // #include "qcsnpe.hpp"
 
 #define OUTPUT_LAYER_1 "/model.24/Concat_15"
-
-typedef struct BoxInfo {
-    int x1;
-    int y1;
-    int x2;
-    int y2;
-    float score;
-    int label;
-} BoxInfo;
-
-typedef struct TrackingBox {
-    int trackID = -1;
-    cv::Rect box;
-    int status = 0;  // 1: true , 0: false,
-    std::string mappedID;
-    std::string mappedName;
-} TrackingBox;
 
 class yolonas {
 private:
@@ -56,18 +40,13 @@ private:
 public:
     yolonas();
     ~yolonas();
-    // yolonas(const yolonas &other) = delete;
-    // yolonas &operator=(const yolonas &other) = delete;
     int load(std::string model_path, zdl::DlSystem::Runtime_t targetDevice);
-    cv::Mat execDetect(cv::Mat mat);
-    std::vector<BoxInfo>postprocess(float *dataSource, float *dataSource_1, int yoloSize,
-                                  int left, int top,
-                                  int num_classes, float threshold);
+    cv::Mat execDetect(cv::Mat mat, std::vector<BoxInfo> &result);
     void nms(std::vector<BoxInfo> &input_boxes, float NMS_THRESH);
     std::vector<std::string> output_layers{"/heads/Sigmoid", "/heads/Mul"};
 
     const int yolonas_size = 320;
-    const float yolonas_threshold = 0.3f;
+    const float yolonas_threshold = 0.5f;
     const int yolonas_classes = 80;
 };
 

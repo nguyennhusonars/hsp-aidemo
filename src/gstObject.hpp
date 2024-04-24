@@ -1,3 +1,6 @@
+#ifndef GST_OBJ_HPP
+#define GST_OBJ_HPP
+
 #include "FaceAlign.hpp"
 #include <opencv2/core/core.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
@@ -6,7 +9,7 @@
 
 #include "FaceDet.hpp"
 #include "FaceRec.hpp"
-#include "yolonas.h"
+#include "yolonas.hpp"
 
 #include <gst/gst.h>
 #include <gst/app/gstappsink.h>
@@ -23,9 +26,12 @@
 #define DB_PATH "../models/db.txt"
 #define NUM_THREADS 1
 
+#define TEST_FR
+// #define TEST_YOLO
+
 typedef enum INPUT_TYPE { NONE = 0, VIDEO = 1, RTSP = 2 } INPUT_TYPE;
 
-class gstObject {
+class gstObject : public TrackProcess {
    public:
     gstObject(std::string url, int inputType, int threadID);
     ~gstObject();
@@ -76,3 +82,5 @@ class gstObject {
     std::vector<std::string> ids;
     cv::Mat feat;
 };
+
+#endif

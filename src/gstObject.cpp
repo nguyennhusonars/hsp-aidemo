@@ -1,12 +1,14 @@
-#include "gstObject.hpp"
-#include "json.hpp"
 #include <gst/video/videooverlay.h>
 #include <filesystem>
 #include <unistd.h>
 
+#include "gstObject.hpp"
+#include "json.hpp"
+
 using json = nlohmann::json;
 #define RECOGNITION_THRESHOLD 0.95
 
+#ifdef TEST_FR
 int gstObject::loadDB(std::string jsonFilePath) {
     std::ifstream jsonFile(jsonFilePath);
     if (!jsonFile.is_open()) {
@@ -95,6 +97,7 @@ int gstObject::addDB(std::string imgFilePath) {
     jsonFile.close();
     return 0;
 }
+#endif
 
 gstObject::gstObject(std::string url, int inputType, int i) {
     SetAdspLibraryPath();
@@ -201,55 +204,69 @@ GstFlowReturn gstObject::onNewSample(GstElement* appsink) {
             return GST_FLOW_OK;
         }
         cv::Mat img = frame.clone();
-        img = cv::imread("/home/car.jpg");
-        std::vector<FaceObject> faces;
+
         std::cout << "=============================================" << std::endl;
+#ifdef TEST_FR
         auto t1 = std::chrono::high_resolution_clock::now();
-        // det->execDetect(img, faces);
-        objDet->execDetect(img);
-        // sortTracking
+        std::vector<FaceObject> faces;
+        det->execDetect(img, faces);
+        std::vector<TrackingBox> ftracks = faceToTracking(faces);
+        sortTracking(ftracks);
         auto t2 = std::chrono::high_resolution_clock::now();
         auto ms_int = std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1);
-        std::cout << "Thread " << threadID << ": FaceDet takes " << ms_int.count() << "ms\n";
-    //     std::cout << "Thread " << threadID << ": Frame has " << faces.size() << " faces" << std::endl;
-    //     faceObjs.clear();
-    //     for (uint32_t i = 0; i < faces.size(); i++) {
-    //         auto t1 = std::chrono::high_resolution_clock::now();
-    //         currentface = faces[i];
-    //         float v2[5][2] = {{float(currentface.point[0].x), float(currentface.point[0].y)},
-    //                           {float(currentface.point[1].x), float(currentface.point[1].y)},
-    //                           {float(currentface.point[2].x), float(currentface.point[2].y)},
-    //                           {float(currentface.point[3].x), float(currentface.point[3].y)},
-    //                           {float(currentface.point[4].x), float(currentface.point[4].y)}};
-    //         cv::Mat src(5, 2, CV_32FC1, norm_face);
-    //         cv::Mat dst(5, 2, CV_32FC1, v2);
-    //         cv::Mat m = similarTransform(dst, src);
-    //         cv::Size size(112, 112);
-    //         cv::Mat aligned(112, 112, CV_32FC3);
-    //         cv::Mat transfer = m(cv::Rect(0, 0, 3, 2));
-    //         cv::warpAffine(img, aligned, transfer, size, 1, 0, 0);
-    //         cv::Mat output = rec->execRecog(aligned);
-    //         if (!feat.empty()) {
-    //             class_info result = rec->classify(output, feat);
-    //             if (result.min_distance < RECOGNITION_THRESHOLD) {
-    //                 currentface.label = ids[result.index];
-    //             } else {
-    //                 currentface.label = "Unknown";
-    //             }
-    //             std::cout << currentface.label << " " << result.min_distance << std::endl;
-    //         }
-    //         faceObjs.push_back(currentface);
-    //         auto t2 = std::chrono::high_resolution_clock::now();
-    //         auto ms_int = std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1);
-    //         std::cout << "Thread " << threadID << ": FaceRec takes " << ms_int.count() << "ms\n";
+        // std::cout << "Thread " << threadID << ": FaceDet takes " << ms_int.count() << "ms\n";
+        // std::cout << "Thread " << threadID << ": Frame has " << faces.size() << " faces" << std::endl;
+        faceObjs.clear();
+        for (uint32_t i = 0; i < faces.size(); i++) {
+            auto t3 = std::chrono::high_resolution_clock::now();
+            currentface = faces[i];
+            float v2[5][2] = {{float(currentface.point[0].x), float(currentface.point[0].y)},
+                              {float(currentface.point[1].x), float(currentface.point[1].y)},
+                              {float(currentface.point[2].x), float(currentface.point[2].y)},
+                              {float(currentface.point[3].x), float(currentface.point[3].y)},
+                              {float(currentface.point[4].x), float(currentface.point[4].y)}};
+            cv::Mat src(5, 2, CV_32FC1, norm_face);
+            cv::Mat dst(5, 2, CV_32FC1, v2);
+            cv::Mat m = similarTransform(dst, src);
+            cv::Size size(112, 112);
+            cv::Mat aligned(112, 112, CV_32FC3);
+            cv::Mat transfer = m(cv::Rect(0, 0, 3, 2));
+            cv::warpAffine(img, aligned, transfer, size, 1, 0, 0);
+            cv::Mat output = rec->execRecog(aligned);
+            if (!feat.empty()) {
+                class_info result = rec->classify(output, feat);
+                if (result.min_distance < RECOGNITION_THRESHOLD) {
+                    currentface.label = ids[result.index];
+                } else {
+                    currentface.label = "Unknown";
+                }
+                printf("%s %f, x: %d, y: %d, w: %d, h: %d\n", currentface.label.c_str(), result.min_distance, 
+                    (int)currentface.rect.x, (int)currentface.rect.y, (int)currentface.rect.width, (int)currentface.rect.height);
+            }
+            faceObjs.push_back(currentface);
+            auto t4 = std::chrono::high_resolution_clock::now();
+            auto ms_int = std::chrono::duration_cast<std::chrono::milliseconds>(t4 - t3);
+            // std::cout << "Thread " << threadID << ": FaceRec takes " << ms_int.count() << "ms\n";
 
-    //         tid = threadID;
-    //         gfaces[tid] = faceObjs;
+            tid = threadID;
+            gfaces[tid] = faceObjs;
 
-    //         overlay_ = gst_bin_get_by_name(GST_BIN(pipeline_), "overlay");
-    //         g_signal_connect(overlay_, "draw", G_CALLBACK(onDrawingStatic), NULL);
-    //         // usleep(30000);
-    //     }
+            overlay_ = gst_bin_get_by_name(GST_BIN(pipeline_), "overlay");
+            g_signal_connect(overlay_, "draw", G_CALLBACK(onDrawingStatic), NULL);
+            // usleep(30000);
+        }
+        
+#elif defined TEST_YOLO 
+        auto t5 = std::chrono::high_resolution_clock::now();
+        std::vector<BoxInfo> result;
+        objDet->execDetect(img, result);
+        std::vector<TrackingBox> tracks = objToTracking(result);
+        sortTracking(tracks);
+        auto t6 = std::chrono::high_resolution_clock::now();
+        auto ms_int_1 = std::chrono::duration_cast<std::chrono::milliseconds>(t6 - t5);
+        std::cout << "Thread " << threadID << ": yolo takes " << ms_int_1.count() << "ms\n";
+        std::cout << "Thread " << threadID << ": Frame has " << result.size() << " objs" << std::endl;
+#endif
         gst_buffer_unmap(buffer, &map_info);
     }
     gst_sample_unref(sample);

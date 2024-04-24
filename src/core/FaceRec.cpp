@@ -31,8 +31,7 @@ int SnpeInsightface::load(std::string containerPath, zdl::DlSystem::Runtime_t ta
 }
 
 cv::Mat SnpeInsightface::execRecog(const cv::Mat& img) {
-    std::unique_ptr<zdl::DlSystem::ITensor> input;
-    input = convertMat2BgrFloat(this->snpeInsightface, img);
+    std::unique_ptr<zdl::DlSystem::ITensor> input = convertMat2BgrFloat(this->snpeInsightface, img);
     static zdl::DlSystem::TensorMap outputTensorMap;
     int exeStatus = this->snpeInsightface->execute(input.get(), outputTensorMap);
     if (exeStatus == true) {

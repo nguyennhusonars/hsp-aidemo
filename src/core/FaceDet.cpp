@@ -207,11 +207,40 @@ int SCRFD::load(std::string containerPath, zdl::DlSystem::Runtime_t targetDevice
     return 0;
 }
 
-int SCRFD::execDetect(const cv::Mat &rgb, std::vector<FaceObject> &faceobjects, float scores_threshold, float nms_threshold) {
-    std::unique_ptr<zdl::DlSystem::ITensor> input;
-    input = convertMat2BgrFloat(this->s->scrfd, rgb);
+int SCRFD::execDetect(cv::Mat rgb, std::vector<FaceObject> &faceobjects, float scores_threshold, float nms_threshold) {
+    float width = rgb.cols;
+    float height = rgb.rows;
+
+    cv::resize(rgb, rgb, cv::Size(input_width, input_height));
+    // cv::imwrite("/home/input_mat.png", rgb);
+    unsigned long int in_size = 1;
+    const zdl::DlSystem::TensorShape i_tensor_shape = s->scrfd->getInputDimensions();
+    const zdl::DlSystem::Dimension *shapes = i_tensor_shape.getDimensions();
+    for (int i = 1; i < i_tensor_shape.rank(); i++) {
+        in_size *= shapes[i];
+    }
+    std::unique_ptr<zdl::DlSystem::ITensor> input_tensor = zdl::SNPE::SNPEFactory::getTensorFactory().createTensor(s->scrfd->getInputDimensions());
+    zdl::DlSystem::ITensor *tensor_ptr = input_tensor.get();
+    if (tensor_ptr == nullptr) {
+        printf("%s\n", "Could not create SNPE input tensor");
+    }
+    float *tensor_ptr_fl = reinterpret_cast<float *>(&(*input_tensor->begin()));
+    const int channels = rgb.channels();
+    const int rows = rgb.rows;
+    const int cols = rgb.cols;
+
+    for (int i = 0; i < rows; i++) {
+        const uchar *row_ptr = rgb.ptr<uchar>(i);
+        for (int j = 0; j < cols; j++) {
+            const uchar *pixel_ptr = row_ptr + j * channels;
+            for (int k = 0; k < channels; k++) {
+                tensor_ptr_fl[(i * cols + j) * channels + k] = static_cast<float>(pixel_ptr[k])/255;
+            }
+        }
+    }
+    // std::unique_ptr<zdl::DlSystem::ITensor> input_tensor = convertMat2BgrFloat(this->s->scrfd, rgb);
     static zdl::DlSystem::TensorMap outputTensorMap;
-    int exeStatus = this->s->scrfd->execute(input.get(), outputTensorMap);
+    int exeStatus = this->s->scrfd->execute(input_tensor.get(), outputTensorMap);
     if (exeStatus == true) {
         // std::cout << "Execute SNPE Successfully" << std::endl;
     } else {
@@ -322,8 +351,6 @@ int SCRFD::execDetect(const cv::Mat &rgb, std::vector<FaceObject> &faceobjects, 
         faceproposals.insert(faceproposals.end(), faceobjects_8.begin(), faceobjects_8.end());
     }
 
-    float width = rgb.cols;
-    float height = rgb.rows;
     qsort_descent_inplace(faceproposals);
 
     std::vector<int> picked;
@@ -368,35 +395,5 @@ int SCRFD::execDetect(const cv::Mat &rgb, std::vector<FaceObject> &faceobjects, 
         faceobjects[i].point[4].y = y4 / (float)input_height * height;
     }
 
-    return 0;
-}
-
-int SCRFD::draw(cv::Mat &rgb, const std::vector<FaceObject> &faceobjects) {
-    for (size_t i = 0; i < faceobjects.size(); i++) {
-        const FaceObject &obj = faceobjects[i];
-
-        cv::rectangle(rgb, obj.rect, cv::Scalar(0, 0, 255), 2);
-
-        if (has_kps) {
-            cv::circle(rgb, obj.point[0], 1, cv::Scalar(255, 255, 0), -1);
-            cv::circle(rgb, obj.point[1], 1, cv::Scalar(255, 255, 0), -1);
-            cv::circle(rgb, obj.point[2], 1, cv::Scalar(255, 255, 0), -1);
-            cv::circle(rgb, obj.point[3], 1, cv::Scalar(255, 255, 0), -1);
-            cv::circle(rgb, obj.point[4], 1, cv::Scalar(255, 255, 0), -1);
-        }
-
-        char text[256];
-        sprintf(text, "%.1f%%", obj.scores * 100);
-
-        int baseLine = 0;
-        cv::Size label_size = cv::getTextSize(text, cv::FONT_HERSHEY_SIMPLEX, 0.8, 2, &baseLine);
-
-        int x = obj.rect.x;
-        int y = obj.rect.y - label_size.height - baseLine;
-        if (y < 0)
-            y = 0;
-        if (x + label_size.width > rgb.cols)
-            x = rgb.cols - label_size.width;
-    }
     return 0;
 }

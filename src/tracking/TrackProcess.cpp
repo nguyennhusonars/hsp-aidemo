@@ -1,4 +1,30 @@
-#include <TrackProcess.hpp>
+#include "TrackProcess.hpp"
+
+std::vector<TrackingBox> faceToTracking(std::vector<FaceObject> objs) {
+    std::vector<TrackingBox> convertVector;
+    for (unsigned int i = 0; i < objs.size(); i++) {
+        TrackingBox tempTrackingBox;
+        tempTrackingBox.box.x = objs[i].rect.x;
+        tempTrackingBox.box.y = objs[i].rect.y;
+        tempTrackingBox.box.width = (objs[i].rect.width);
+        tempTrackingBox.box.height = (objs[i].rect.height);
+        convertVector.push_back(tempTrackingBox);
+    }
+    return convertVector;
+}
+
+std::vector<TrackingBox> objToTracking(std::vector<BoxInfo> objs) {
+    std::vector<TrackingBox> convertVector;
+    for (unsigned int i = 0; i < objs.size(); i++) {
+        TrackingBox tempTrackingBox;
+        tempTrackingBox.box.x = objs[i].x1;
+        tempTrackingBox.box.y = objs[i].y1;
+        tempTrackingBox.box.width = (objs[i].x2 - objs[i].x1);
+        tempTrackingBox.box.height = (objs[i].y2 - objs[i].y1);
+        convertVector.push_back(tempTrackingBox);
+    }
+    return convertVector;
+}
 
 double GetIOU(Rect_<float> bb_test, Rect_<float> bb_gt) {
     float in = (bb_test & bb_gt).area();
@@ -30,7 +56,7 @@ void TrackProcess::sortTracking(std::vector<TrackingBox> &detData) {
         for (unsigned int i = 0; i < detData.size(); i++) {
             KalmanTracker trk = KalmanTracker(detData[i].box);
             trackers.push_back(trk);
-            trackers_ori.push_back(detData[i].box);
+            // trackers_ori.push_back(detData[i].box);
         }
     }
     predictedBoxes.clear();
@@ -120,23 +146,5 @@ void TrackProcess::sortTracking(std::vector<TrackingBox> &detData) {
         if (it != trackers.end() && (*it).m_time_since_update > max_age) it = trackers.erase(it);
     }
     for (auto tb : frameTrackingResult)
-        std::cout << tb.trackID << "," << tb.box.x << "," << tb.box.y << "," << tb.box.width << "," << tb.box.height << endl;
-
-    // // save mid point history
-    // for (uint32_t i = 0; i < frameTrackingResult.size(); i++) {
-    //     int32_t mid_end_x = frameTrackingResult[i].box.x + (frameTrackingResult[i].box.width / 2);
-    //     int32_t mid_end_y = frameTrackingResult[i].box.y + frameTrackingResult[i].box.height;
-    //     std::vector<cv::Point> tempVect;
-    //     tempVect.push_back(cv::Point(mid_end_x, mid_end_y));
-    //     if (idToPointHistory[frameTrackingResult[i].trackID].size() == 2) {
-    //         // Remove the oldest point (first item in the vector)
-    //         idToPointHistory[frameTrackingResult[i].trackID].erase(idToPointHistory[frameTrackingResult[i].trackID].begin());
-    //     }
-    //     idToPointHistory[frameTrackingResult[i].trackID].insert(idToPointHistory[frameTrackingResult[i].trackID].end(), tempVect.begin(), tempVect.end());
-    // }
-    // if (!frameTrackingResult.empty()) {
-    //     for (uint32_t i = 0; i < frameTrackingResult.size(); i++) {
-    //         mapDetObj(frameTrackingResult[i], detData);
-    //     }
-    // }
+        printf("TrackID %d, x: %d, y: %d, w: %d, h: %d\n", tb.trackID, tb.box.x, tb.box.y, tb.box.width, tb.box.height);
 }

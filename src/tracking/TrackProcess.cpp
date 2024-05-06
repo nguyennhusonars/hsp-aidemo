@@ -133,6 +133,7 @@ void TrackProcess::sortTracking(std::vector<TrackingBox> &detData) {
     for (auto umd : unmatchedDetections) {
         KalmanTracker tracker = KalmanTracker(detData[umd].box, detData[umd].points);
         trackers.push_back(tracker);
+        totalObjs++;
     }
     // // get trackers' output
     frameTrackingResult.clear();

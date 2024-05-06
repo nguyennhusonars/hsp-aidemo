@@ -1,4 +1,4 @@
-Build and run demo on device side:
+Build and run demo on Qualcomm device side:
 - apt-get update
 - apt install libcairo2-dev
 - apt install cmake

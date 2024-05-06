@@ -36,9 +36,9 @@ typedef struct TrackingBox {
 
 class TrackProcess {
    private:
-    int max_age = 60;
+    int max_age = 30;
     int min_hits = 3;
-    double iouThreshold = 0.3;
+    double iouThreshold = 0.15;
 
     int latestTrackId = -1;
     std::vector<KalmanTracker> trackers;
@@ -61,6 +61,7 @@ class TrackProcess {
     std::vector<TrackingBox> frameTrackingResult_ori;
     void sortTracking(std::vector<TrackingBox> &detData);
 	std::map<int, std::string> listTr;
+    int totalObjs = 0;
     // void mappingKalmanObj(std::vector<TrackingBox> &detData);
 };
 

@@ -303,13 +303,21 @@ GstFlowReturn gstObject::onNewSample(GstElement* appsink) {
 #elif defined TEST_YOLO 
         auto t5 = std::chrono::high_resolution_clock::now();
         std::vector<BoxInfo> result;
+        std::vector<BoxInfo> result_ft;
         objDet->execDetect(img, result);
-        std::vector<TrackingBox> tracks = objToTracking(result);
+        // Only tracking objects which have size > 160px
+        for (auto rs : result) {
+            if (rs.x2 - rs.x1 > 160) {
+                result_ft.push_back(rs);
+            }
+        }
+        std::vector<TrackingBox> tracks = objToTracking(result_ft);
+        //
         sortTracking(tracks);
+        std::cout << "Thread " << threadID << ": Total " << totalObjs << " objs" << std::endl;
         auto t6 = std::chrono::high_resolution_clock::now();
         auto ms_int_1 = std::chrono::duration_cast<std::chrono::milliseconds>(t6 - t5);
         std::cout << "Thread " << threadID << ": yolo takes " << ms_int_1.count() << "ms\n";
-        std::cout << "Thread " << threadID << ": Frame has " << result.size() << " objs" << std::endl;
 #endif
         gst_buffer_unmap(buffer, &map_info);
     }

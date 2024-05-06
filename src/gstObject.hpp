@@ -26,7 +26,10 @@
 #define DB_PATH "../models/db.txt"
 #define NUM_THREADS 1
 
+// Use below flag to run aidemo app for Face Recognition Application
 #define TEST_FR
+
+// or use below flag to run aidemo app for Object Detection Application
 // #define TEST_YOLO
 
 typedef enum INPUT_TYPE { NONE = 0, VIDEO = 1, RTSP = 2 } INPUT_TYPE;

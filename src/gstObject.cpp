@@ -129,8 +129,8 @@ gstObject::gstObject(std::string url, int inputType, int i) {
     g_signal_connect(appsink_, "new-sample", G_CALLBACK(onNewSampleStatic), this);
 
     // gstObject * tmp = this;
-    // overlay_ = gst_bin_get_by_name(GST_BIN(pipeline_), "overlay");
-    // g_signal_connect(overlay_, "draw", G_CALLBACK(onDrawingStatic), NULL);
+    overlay_ = gst_bin_get_by_name(GST_BIN(pipeline_), "overlay");
+    g_signal_connect(overlay_, "draw", G_CALLBACK(onDrawingStatic), NULL);
 
     bus_ = gst_pipeline_get_bus(GST_PIPELINE(pipeline_));
     gst_bus_add_signal_watch(bus_);
@@ -295,8 +295,8 @@ GstFlowReturn gstObject::onNewSample(GstElement* appsink) {
             tid = threadID;
             gfaces[tid] = faceObjs;
 
-            overlay_ = gst_bin_get_by_name(GST_BIN(pipeline_), "overlay");
-            g_signal_connect(overlay_, "draw", G_CALLBACK(onDrawingStatic), NULL);
+            // overlay_ = gst_bin_get_by_name(GST_BIN(pipeline_), "overlay");
+            // g_signal_connect(overlay_, "draw", G_CALLBACK(onDrawingStatic), NULL);
             // usleep(30000);
         }
         

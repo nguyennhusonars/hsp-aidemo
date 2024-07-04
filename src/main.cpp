@@ -27,14 +27,14 @@ std::vector<std::string> rtspLists = {"rtsp://192.169.1.53/stream1",
                                         "rtsp://192.169.1.53/stream1"};
 
 #ifdef TEST_FR
-std::vector<std::string> videoLists = {"/home/demo/hsp-aidemo-master/models/frtest.mp4", 
-                                        "/home/demo/hsp-aidemo-master/models/testFR.mp4", 
-                                        "/home/demo/hsp-aidemo-master/models/frtest.mp4", 
-                                        "/home/demo/hsp-aidemo-master/models/frtest.mp4",
-                                        "/home/demo/hsp-aidemo-master/models/frtest.mp4", 
-                                        "/home/demo/hsp-aidemo-master/models/frtest.mp4", 
-                                        "/home/demo/hsp-aidemo-master/models/frtest.mp4", 
-                                        "/home/demo/hsp-aidemo-master/models/frtest.mp4"};
+std::vector<std::string> videoLists = {"/home/demo/hsp-aidemo/models/frtest.mp4", 
+                                        "/home/demo/hsp-aidemo/models/frtest.mp4", 
+                                        "/home/demo/hsp-aidemo/models/frtest.mp4", 
+                                        "/home/demo/hsp-aidemo/models/frtest.mp4",
+                                        "/home/demo/hsp-aidemo/models/frtest.mp4", 
+                                        "/home/demo/hsp-aidemo/models/frtest.mp4", 
+                                        "/home/demo/hsp-aidemo/models/frtest.mp4", 
+                                        "/home/demo/hsp-aidemo/models/frtest.mp4"};
 
 #elif defined TEST_YOLO 
 std::vector<std::string> videoLists = {"/home/demo/hsp-aidemo-master/models/traffic.mp4", 

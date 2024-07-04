@@ -211,7 +211,7 @@ int SCRFD::execDetect(cv::Mat rgb, std::vector<FaceObject> &faceobjects, float s
     float width = rgb.cols;
     float height = rgb.rows;
 
-    cv::resize(rgb, rgb, cv::Size(input_width, input_height));
+    cv::resize(rgb, rgb, cv::Size(input_width, input_height), 0, 0, cv::INTER_NEAREST);
     // cv::imwrite("/home/input_mat.png", rgb);
     unsigned long int in_size = 1;
     const zdl::DlSystem::TensorShape i_tensor_shape = s->scrfd->getInputDimensions();

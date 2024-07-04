@@ -24,7 +24,7 @@
 #define YOLOV8_MODEL_PATH "../models/yolo_nas_s_v213_quantized.dlc"
 #define DB_IMAGE_PATH "../models/images/"
 #define DB_PATH "../models/db.txt"
-#define NUM_THREADS 1
+#define NUM_THREADS 3
 
 // Use below flag to run aidemo app for Face Recognition Application
 #define TEST_FR
@@ -50,8 +50,8 @@ class gstObject : public TrackProcess {
     static GstFlowReturn onNewSampleStatic(GstElement* appsink, gpointer user_data) {
         return reinterpret_cast<gstObject*>(user_data)->onNewSample(appsink);
     }
-    static gboolean onDrawingStatic(GstElement* overlay, cairo_t *cr, gpointer user_data) {
-        return reinterpret_cast<gstObject*>(user_data)->onDrawing(overlay, cr);
+    static gboolean onDrawingStatic(gpointer user_data, cairo_t* cr, GstElement* overlay) {
+        return reinterpret_cast<gstObject*>(user_data)->onDrawing(cr);
     }
     static void onEosStatic(GstBus* bus, GstMessage* msg, gpointer user_data) {
         g_print("End-of-Stream reached\n");
@@ -66,7 +66,7 @@ class gstObject : public TrackProcess {
     GstBus* bus_;
     std::thread decodeThread_;
     GMainLoop* mainLoop_;
-    gboolean onDrawing(GstElement* overlay, cairo_t* cr);
+    gboolean onDrawing(cairo_t* cr);
     GstFlowReturn onNewSample(GstElement* appsink);
     void decode();
     GstBuffer* buffer;
@@ -77,9 +77,7 @@ class gstObject : public TrackProcess {
     std::unique_ptr<SCRFD> det = std::make_unique<SCRFD>();
     std::unique_ptr<SnpeInsightface> rec = std::make_unique<SnpeInsightface>();
     std::unique_ptr<yolonas> objDet = std::make_unique<yolonas>();
-    // std::vector<FaceObject> faceObjs;
-    // FaceObject currentface;
-    std::vector<TrackingBox> faceObjs;
+    std::vector<std::vector<TrackingBox>> faceObjs = std::vector<std::vector<TrackingBox>> (NUM_THREADS);
     TrackingBox currentface;
     cv::Mat img;
 

@@ -111,16 +111,16 @@ gstObject::gstObject(std::string url, int inputType, int i) {
     if (inputType == INPUT_TYPE::VIDEO) {
         std::string tmp = "filesrc location=" + url +
                           " ! qtdemux ! queue ! h264parse ! qtivdec skip-frames=yes turbo=yes ! tee name=t \
-                            t. ! queue ! qtivtransform ! video/x-raw,format=NV12 ! appsink name=sink sync=false \
-                            t. ! queue ! qtivtransform ! cairooverlay name=overlay ! waylandsink sync=false x=" +
-                          std::to_string(i % 3 * 480) + " y=" + std::to_string(i / 3 * 240) + " width=480 height=240";
+                            t. ! queue ! qtivtransform ! cairooverlay name=overlay ! waylandsink sync=false x=" + \
+                            std::to_string(i % 3 * 480) + " y=" + std::to_string(i / 3 * 270) + " width=480 height=270 \
+                            t. ! queue ! qtivtransform ! video/x-raw,format=BGR ! appsink name=sink sync=false";
         pipeline_ = gst_parse_launch(tmp.c_str(), nullptr);
     } else if (inputType == INPUT_TYPE::RTSP) {
         std::string tmp = "rtspsrc location=" + url +
                           " ! rtph264depay ! h264parse ! qtivdec skip-frames=yes turbo=yes ! tee name=t \
                             t. ! queue ! qtivtransform ! video/x-raw,format=NV12 ! appsink name=sink sync=false \
                             t. ! queue ! qtivtransform ! cairooverlay name=overlay ! waylandsink sync=false x=" +
-                          std::to_string(i % 3 * 480) + " y=" + std::to_string(i / 3 * 240) + " width=480 height=240";
+                          std::to_string(i % 3 * 480) + " y=" + std::to_string(i / 3 * 270) + " width=480 height=270";
         pipeline_ = gst_parse_launch(tmp.c_str(), nullptr);
     }
 
@@ -128,9 +128,8 @@ gstObject::gstObject(std::string url, int inputType, int i) {
     g_object_set(G_OBJECT(appsink_), "emit-signals", TRUE, nullptr);
     g_signal_connect(appsink_, "new-sample", G_CALLBACK(onNewSampleStatic), this);
 
-    // gstObject * tmp = this;
     overlay_ = gst_bin_get_by_name(GST_BIN(pipeline_), "overlay");
-    g_signal_connect(overlay_, "draw", G_CALLBACK(onDrawingStatic), NULL);
+    g_signal_connect_data(overlay_, "draw", G_CALLBACK(onDrawingStatic), this, NULL, G_CONNECT_SWAPPED);
 
     bus_ = gst_pipeline_get_bus(GST_PIPELINE(pipeline_));
     gst_bus_add_signal_watch(bus_);
@@ -143,37 +142,9 @@ gstObject::~gstObject() {
     gst_object_unref(bus_);
 }
 
-int tid;
-// std::vector<std::vector<FaceObject>> gfaces(NUM_THREADS);
-// gboolean gstObject::onDrawing(GstElement* overlay, cairo_t* cr) {
-//     // std::cout << threadID << std::endl;
-//     std::vector<FaceObject> tmp = gfaces[tid];
-//     cairo_set_operator(cr, CAIRO_OPERATOR_OVER);
-//     cairo_select_font_face(cr, "@cairo:Georgia", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_BOLD);
-//     cairo_set_antialias(cr, CAIRO_ANTIALIAS_BEST);
-//     {
-//         cairo_font_options_t* options = cairo_font_options_create();
-//         cairo_font_options_set_antialias(options, CAIRO_ANTIALIAS_BEST);
-//         cairo_set_font_options(cr, options);
-//         cairo_font_options_destroy(options);
-//         cairo_set_font_size(cr, 50);
-//     }
-//     cairo_set_source_rgba(cr, 0.0, 1.0, 0.0, 1.0);
-//     for (auto curFace : tmp) {
-//         cairo_set_line_width(cr, 10);
-//         cairo_rectangle(cr, curFace.rect.x, curFace.rect.y, curFace.rect.width, curFace.rect.height);
-//         cairo_move_to(cr, curFace.rect.x, curFace.rect.y);
-//         cairo_show_text(cr, curFace.label.c_str());
-//         cairo_stroke(cr);
-//     }
-//     return true;
-// }
-
-std::vector<std::vector<TrackingBox>> gfaces(NUM_THREADS);
-gboolean gstObject::onDrawing(GstElement* overlay, cairo_t* cr) {
-    // std::cout << threadID << std::endl;
-    std::vector<TrackingBox> tmp = gfaces[tid];
-    cairo_set_operator(cr, CAIRO_OPERATOR_OVER);
+gboolean gstObject::onDrawing(cairo_t* cr) {
+    std::vector<TrackingBox> tmp = faceObjs[threadID];
+    cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE);
     cairo_select_font_face(cr, "@cairo:Georgia", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_BOLD);
     cairo_set_antialias(cr, CAIRO_ANTIALIAS_BEST);
     {
@@ -241,17 +212,9 @@ GstFlowReturn gstObject::onNewSample(GstElement* appsink) {
         auto ms_int = std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1);
         std::cout << "Thread " << threadID << ": FaceDet takes " << ms_int.count() << "ms\n";
         std::cout << "Thread " << threadID << ": Frame has " << faces.size() << " faces" << std::endl;
-        faceObjs.clear();
+        faceObjs[threadID].clear();
         for (uint32_t i = 0; i < frameTrackingResult.size(); i++) {
             auto t3 = std::chrono::high_resolution_clock::now();
-            // std::vector<int> key;
-            // std::vector<string>name;
-            // for(std::map<int,string>::iterator it = listTr.begin(); it !=listTr.end(); ++it) {
-            // key.push_back(it->first);
-            // name.push_back(it->second);
-            // std::cout << "Key: " << it->first << std::endl;
-            // std::cout << "Value: " << it->second << std::endl;
-            // }
             currentface = frameTrackingResult[i];
             auto it = listTr.find(currentface.trackID);
             if (it != listTr.end()) {
@@ -284,20 +247,11 @@ GstFlowReturn gstObject::onNewSample(GstElement* appsink) {
                 }
                 printf("First recog trackID %d: %s\n", currentface.trackID, currentface.label.c_str());
             }
-            // printf("TrackID %d, %s %f, x: %d, y: %d, w: %d, h: %d\n", currentface.trackID, currentface.label.c_str(), result.min_distance, 
-            //     (int)currentface.box.x, (int)currentface.box.y, (int)currentface.box.width, (int)currentface.box.height);
             listTr[currentface.trackID] = currentface.label;
-            faceObjs.push_back(currentface);
+            faceObjs[threadID].push_back(currentface);
             auto t4 = std::chrono::high_resolution_clock::now();
             auto ms_int = std::chrono::duration_cast<std::chrono::milliseconds>(t4 - t3);
             std::cout << "Thread " << threadID << ": FaceRec takes " << ms_int.count() << "ms\n";
-
-            tid = threadID;
-            gfaces[tid] = faceObjs;
-
-            // overlay_ = gst_bin_get_by_name(GST_BIN(pipeline_), "overlay");
-            // g_signal_connect(overlay_, "draw", G_CALLBACK(onDrawingStatic), NULL);
-            // usleep(30000);
         }
         
 #elif defined TEST_YOLO 
@@ -321,6 +275,7 @@ GstFlowReturn gstObject::onNewSample(GstElement* appsink) {
 #endif
         gst_buffer_unmap(buffer, &map_info);
     }
+    // usleep(2000000);
     gst_sample_unref(sample);
     return GST_FLOW_OK;
 }

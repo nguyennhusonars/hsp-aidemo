@@ -24,7 +24,7 @@
 #define YOLOV8_MODEL_PATH "../models/yolo_nas_s_v213_quantized.dlc"
 #define DB_IMAGE_PATH "../models/images/"
 #define DB_PATH "../models/db.txt"
-#define NUM_THREADS 3
+#define NUM_THREADS 8
 
 // Use below flag to run aidemo app for Face Recognition Application
 #define TEST_FR

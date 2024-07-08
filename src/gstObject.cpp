@@ -111,21 +111,20 @@ gstObject::gstObject(std::string url, int inputType, int i) {
     if (inputType == INPUT_TYPE::VIDEO) {
         std::string tmp = "filesrc location=" + url +
                           " ! qtdemux ! queue ! h264parse ! qtivdec skip-frames=yes turbo=yes ! tee name=t \
-                            t. ! queue ! qtivtransform ! cairooverlay name=overlay ! waylandsink sync=false x=" + \
-                            std::to_string(i % 3 * 480) + " y=" + std::to_string(i / 3 * 270) + " width=480 height=270 \
-                            t. ! queue ! qtivtransform ! video/x-raw,format=BGR ! appsink name=sink sync=false";
+                            t. ! queue ! qtivtransform ! videorate ! video/x-raw,format=RGB,framerate=12/1 ! appsink name=sink sync=false emit-signals=true \
+                            t. ! queue ! qtivtransform ! videorate ! video/x-raw,format=RGB,framerate=12/1 ! qtivtransform ! cairooverlay name=overlay ! waylandsink sync=false x=" + \
+                            std::to_string(i % 3 * 480) + " y=" + std::to_string(i / 3 * 270) + " width=480 height=270";
         pipeline_ = gst_parse_launch(tmp.c_str(), nullptr);
     } else if (inputType == INPUT_TYPE::RTSP) {
         std::string tmp = "rtspsrc location=" + url +
                           " ! rtph264depay ! h264parse ! qtivdec skip-frames=yes turbo=yes ! tee name=t \
-                            t. ! queue ! qtivtransform ! video/x-raw,format=NV12 ! appsink name=sink sync=false \
-                            t. ! queue ! qtivtransform ! cairooverlay name=overlay ! waylandsink sync=false x=" +
+                            t. ! queue ! qtivtransform ! videorate ! video/x-raw,format=RGB,framerate=12/1 ! appsink name=sink sync=false emit-signals=true \
+                            t. ! queue ! qtivtransform ! videorate ! video/x-raw,format=RGB,framerate=12/1 ! qtivtransform ! cairooverlay name=overlay ! waylandsink sync=false x=" + \
                           std::to_string(i % 3 * 480) + " y=" + std::to_string(i / 3 * 270) + " width=480 height=270";
         pipeline_ = gst_parse_launch(tmp.c_str(), nullptr);
     }
 
     appsink_ = GST_APP_SINK(gst_bin_get_by_name(GST_BIN(pipeline_), "sink"));
-    g_object_set(G_OBJECT(appsink_), "emit-signals", TRUE, nullptr);
     g_signal_connect(appsink_, "new-sample", G_CALLBACK(onNewSampleStatic), this);
 
     overlay_ = gst_bin_get_by_name(GST_BIN(pipeline_), "overlay");
@@ -199,27 +198,24 @@ GstFlowReturn gstObject::onNewSample(GstElement* appsink) {
             gst_sample_unref(sample);
             return GST_FLOW_OK;
         }
-        cv::Mat img = frame.clone();
-
-        std::cout << "=============================================" << std::endl;
 #ifdef TEST_FR
         auto t1 = std::chrono::high_resolution_clock::now();
         std::vector<FaceObject> faces;
-        det->execDetect(img, faces);
+        det->execDetect(frame, faces);
         std::vector<TrackingBox> ftracks = faceToTracking(faces);
         sortTracking(ftracks);
         auto t2 = std::chrono::high_resolution_clock::now();
         auto ms_int = std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1);
         std::cout << "Thread " << threadID << ": FaceDet takes " << ms_int.count() << "ms\n";
-        std::cout << "Thread " << threadID << ": Frame has " << faces.size() << " faces" << std::endl;
+        // std::cout << "Thread " << threadID << ": Frame has " << faces.size() << " faces" << std::endl;
         faceObjs[threadID].clear();
         for (uint32_t i = 0; i < frameTrackingResult.size(); i++) {
             auto t3 = std::chrono::high_resolution_clock::now();
             currentface = frameTrackingResult[i];
             auto it = listTr.find(currentface.trackID);
             if (it != listTr.end()) {
-                printf("Already recog trackID %d: %s, x: %d, y: %d, w: %d, h: %d\n", currentface.trackID, listTr[currentface.trackID].c_str(), 
-                    (int)currentface.box.x, (int)currentface.box.y, (int)currentface.box.width, (int)currentface.box.height);
+                // printf("Already recog trackID %d: %s, x: %d, y: %d, w: %d, h: %d\n", currentface.trackID, listTr[currentface.trackID].c_str(), 
+                //     (int)currentface.box.x, (int)currentface.box.y, (int)currentface.box.width, (int)currentface.box.height);
                 currentface.label = listTr[currentface.trackID];
             }
             else {
@@ -234,7 +230,7 @@ GstFlowReturn gstObject::onNewSample(GstElement* appsink) {
                 cv::Size size(112, 112);
                 cv::Mat aligned(112, 112, CV_32FC3);
                 cv::Mat transfer = m(cv::Rect(0, 0, 3, 2));
-                cv::warpAffine(img, aligned, transfer, size, 1, 0, 0);
+                cv::warpAffine(frame, aligned, transfer, size, 1, 0, 0);
                 cv::Mat output = rec->execRecog(aligned);
                 class_info result;
                 if (!feat.empty()) {
@@ -251,7 +247,7 @@ GstFlowReturn gstObject::onNewSample(GstElement* appsink) {
             faceObjs[threadID].push_back(currentface);
             auto t4 = std::chrono::high_resolution_clock::now();
             auto ms_int = std::chrono::duration_cast<std::chrono::milliseconds>(t4 - t3);
-            std::cout << "Thread " << threadID << ": FaceRec takes " << ms_int.count() << "ms\n";
+            // std::cout << "Thread " << threadID << ": FaceRec takes " << ms_int.count() << "ms\n";
         }
         
 #elif defined TEST_YOLO 

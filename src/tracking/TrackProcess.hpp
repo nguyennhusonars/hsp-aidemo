@@ -37,8 +37,8 @@ typedef struct TrackingBox {
 class TrackProcess {
    private:
     int max_age = 30;
-    int min_hits = 3;
-    double iouThreshold = 0.15;
+    int min_hits = 2;
+    double iouThreshold = 0.1;
 
     int latestTrackId = -1;
     std::vector<KalmanTracker> trackers;

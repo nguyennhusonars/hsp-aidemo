@@ -38,7 +38,7 @@ class SCRFD {
     SCRFD();
     ~SCRFD();
     int load(std::string model_path, zdl::DlSystem::Runtime_t targetDevice);
-    int execDetect(cv::Mat rgb, std::vector<FaceObject>& faceobjects, float scores_threshold = 0.5f, float nms_threshold = 0.45f);
+    int execDetect(cv::Mat rgb, std::vector<FaceObject>& faceobjects, float scores_threshold = 0.4f, float nms_threshold = 0.45f);
 
    private:
     scrfd_params* s;

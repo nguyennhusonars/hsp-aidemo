@@ -1,16 +1,16 @@
-Build and run demo on Qualcomm device side:
+Build and run a demo on Qualcomm device side:
 - apt-get update
 - apt install libcairo2-dev
 - apt install cmake
 - cmake -DBUILD_AARCH64=1 ..
 - make -j4
 
-After build successfully:
+After building successfully:
 - Push all libs under libs/opencv-4.9.0/aarch64/lib/ to /usr/lib/
 - Push all libs under libs/SNPE2.19/aarch64-ubuntu-gcc9.4/ to /usr/lib/
 - Push all libs under libs/SNPE2.19/hexagon-v68/unsigned/ to /usr/lib/rfsa/adsp/
-- Push "aidemo" app to device
-	Note: Users can modify rtspLists, videoLists anh NUM_THREADS in main.cpp to test with specific configurations. In videoLists, the path must be the absolute path of video on device.
+- Push the "aidemo" app to the device
+	Note: Users can modify rtspLists, videoLists, and NUM_THREADS in main.cpp to test with specific configurations. In videoLists, the path must be the absolute path of the video on the device.
 - To run the demo application:
 	+ export XDG_RUNTIME_DIR=/run/user/root
 	+ ./aidemo --add
